@@ -90,87 +90,43 @@ export const storage = {
 
   saveLastLocation: (address: string): void => {
     try {
-      console.log('[v2] Saving last location from address:', address);
-      // Extract suburb/city from address
-      const parts = address.split(',').map(p => p.trim());
+      console.log('[v3] SIMPLE: Saving address:', address);
+      
+      // Simple approach: just save the full address
+      // We'll extract meaningful parts for display
       const lastLocationData: LastLocationData = {};
       
-      if (parts.length >= 2) {
-        // Handle Australian format: "123 Street Name, Suburb State Postcode"
-        // or "123 Street Name, Suburb, State Postcode"
-        const lastPart = parts[parts.length - 1];
+      // Always save the full address as a fallback
+      lastLocationData.suburb = address;
+      
+      // Try to extract state and postcode if they exist
+      const statePostcodeMatch = address.match(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*(\d{4})$/i);
+      if (statePostcodeMatch) {
+        lastLocationData.state = statePostcodeMatch[1].toUpperCase();
+        lastLocationData.postcode = statePostcodeMatch[2];
         
-        // Extract postcode (4 digits in Australia)
-        const postcodeMatch = lastPart.match(/(\d{4})$/);
-        if (postcodeMatch) {
-          lastLocationData.postcode = postcodeMatch[1];
-        }
-        
-        // Extract state (2-3 letter abbreviation before postcode)
-        const stateMatch = lastPart.match(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b/i);
-        if (stateMatch) {
-          lastLocationData.state = stateMatch[1].toUpperCase();
-        }
-        
-        // Extract suburb/city
-        if (parts.length === 2) {
-          // Format: "Street, Suburb State Postcode"
-          let suburb = parts[1];
-          console.log('Extracting from 2-part address, second part:', suburb);
-          // Remove state and postcode to get just suburb
-          // Updated regex to be more flexible
-          suburb = suburb.replace(/\s*(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*\d{4}$/i, '').trim();
-          console.log('Suburb after cleanup:', suburb);
-          if (suburb) lastLocationData.suburb = suburb;
-        } else if (parts.length >= 3) {
-          // Format: "Street, Suburb, State Postcode" or more complex
-          console.log('Extracting from multi-part address:', parts);
-          lastLocationData.suburb = parts[1]; // Second part is usually suburb
-          if (parts.length >= 4) {
-            lastLocationData.city = parts[2]; // Third part might be city
-          }
-        }
-      } else if (parts.length === 1) {
-        // Handle single-part addresses by checking for patterns
-        const singlePart = parts[0];
-        console.log('Single part address:', singlePart);
-        
-        // Check if it contains state and postcode at the end
-        const statePostcodeMatch = singlePart.match(/\b([A-Za-z\s]+)\s+(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*(\d{4})$/i);
-        if (statePostcodeMatch) {
-          // Extract suburb from addresses like "23 Brune St Bondi NSW 2026"
-          const fullMatch = statePostcodeMatch[0];
-          const beforeStatePostcode = singlePart.substring(0, singlePart.indexOf(fullMatch)).trim();
-          
-          // Try to extract suburb name (usually after street name)
-          const words = beforeStatePostcode.split(/\s+/);
-          if (words.length >= 3) {
-            // Assume format like "123 Street Name Suburb"
-            // Skip number and street name, take the rest as suburb
-            const streetTypeIndex = words.findIndex(w => 
-              /^(st|street|rd|road|ave|avenue|dr|drive|ct|court|pl|place|way|lane|ln|blvd|boulevard|cres|crescent|tce|terrace|pde|parade)$/i.test(w)
-            );
-            if (streetTypeIndex > 0 && streetTypeIndex < words.length - 1) {
-              lastLocationData.suburb = words.slice(streetTypeIndex + 1).join(' ');
-            }
-          }
-          
-          lastLocationData.suburb = lastLocationData.suburb || statePostcodeMatch[1].trim();
-          lastLocationData.state = statePostcodeMatch[2].toUpperCase();
-          lastLocationData.postcode = statePostcodeMatch[3];
-        } else {
-          // Fallback: save the whole address as suburb if no pattern matches
-          // This handles cases like "23 brune" where we can't extract specific parts
-          console.log('[v2] No pattern matched, saving as fallback suburb:', singlePart);
-          lastLocationData.suburb = singlePart;
+        // Remove state and postcode from suburb
+        lastLocationData.suburb = address.replace(/\s*(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*\d{4}$/i, '').trim();
+      }
+      
+      // If address has comma, take part after last comma as location hint
+      const parts = address.split(',');
+      if (parts.length > 1) {
+        const lastPart = parts[parts.length - 1].trim();
+        // If last part doesn't have state/postcode, use it as suburb
+        if (!statePostcodeMatch) {
+          lastLocationData.suburb = lastPart;
         }
       }
       
-      console.log('[v2] Extracted location data:', lastLocationData);
-      console.log('[v2] About to save to localStorage:', JSON.stringify(lastLocationData));
+      console.log('[v3] SIMPLE: Saving data:', lastLocationData);
       localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(lastLocationData));
+      
+      // Verify it saved
+      const saved = localStorage.getItem(LAST_LOCATION_KEY);
+      console.log('[v3] SIMPLE: Verified in localStorage:', saved);
     } catch (error) {
-      console.error('Failed to save last location:', error);
+      console.error('[v3] Failed to save last location:', error);
     }
   },
 

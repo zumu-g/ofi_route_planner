@@ -26,33 +26,36 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [addressSuggestion, setAddressSuggestion] = useState<string>('');
 
   useEffect(() => {
-    console.log('[v2] LocationForm mounted/updated. EditLocation:', editLocation);
-    // Load last location data when form opens for new location
+    console.log('[v3] LocationForm mounted. EditLocation:', editLocation);
+    
     if (!editLocation) {
-      // Small delay to ensure localStorage is up to date
-      setTimeout(() => {
-        const lastLocation = storage.loadLastLocation();
-        console.log('[v2] Loading last location data for prepopulation:', lastLocation);
-        console.log('[v2] Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
+      // Always try to load prepopulation data
+      const lastLocation = storage.loadLastLocation();
+      console.log('[v3] Loaded from storage:', lastLocation);
+      
+      // Build suggestion from whatever we have
+      if (lastLocation && lastLocation.suburb) {
+        let suggestion = lastLocation.suburb;
         
-        if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
-          const parts = [];
-          if (lastLocation.suburb) parts.push(lastLocation.suburb);
-          if (lastLocation.city) parts.push(lastLocation.city);
+        // Add state and postcode if available
+        if (lastLocation.state || lastLocation.postcode) {
+          const parts = [suggestion];
           if (lastLocation.state && lastLocation.postcode) {
             parts.push(`${lastLocation.state} ${lastLocation.postcode}`);
+          } else if (lastLocation.state) {
+            parts.push(lastLocation.state);
           } else if (lastLocation.postcode) {
             parts.push(lastLocation.postcode);
           }
-          const suggestion = parts.join(', ');
-          setAddressSuggestion(suggestion);
-          console.log('Address suggestion set:', suggestion);
-        } else {
-          console.log('No previous location data found for prepopulation');
+          suggestion = parts.join(', ');
         }
-      }, 100);
+        
+        setAddressSuggestion(suggestion);
+        console.log('[v3] Set suggestion:', suggestion);
+      } else {
+        console.log('[v3] No prepopulation data available');
+      }
     } else {
-      // Clear suggestion when editing
       setAddressSuggestion('');
     }
   }, [editLocation]);
@@ -98,9 +101,12 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     };
     
     // Save the address details for future prepopulation
-    console.log('[v2] Saving location address for prepopulation:', location.address);
+    console.log('[v3] Saving location address for prepopulation:', location.address);
     storage.saveLastLocation(location.address);
-    console.log('[v2] After save, localStorage contains:', localStorage.getItem('ofi-route-planner-last-location'));
+    
+    // Immediate verification
+    const savedData = localStorage.getItem('ofi-route-planner-last-location');
+    console.log('[v3] Verified save - localStorage now contains:', savedData);
     
     onAdd(location);
   };
@@ -154,15 +160,16 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                 style={{
                   marginLeft: '8px',
                   fontSize: '12px',
-                  padding: '2px 8px',
+                  padding: '4px 12px',
                   background: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
                 }}
               >
-                Use {addressSuggestion}
+                Use: {addressSuggestion}
               </button>
             )}
           </label>
@@ -205,14 +212,18 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           />
           {addressSuggestion && (
             <div style={{
-              fontSize: '12px',
-              color: 'var(--color-text-tertiary)',
-              marginTop: '4px'
+              fontSize: '13px',
+              color: 'var(--color-primary)',
+              marginTop: '6px',
+              padding: '8px',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderRadius: '4px',
+              border: '1px solid rgba(59, 130, 246, 0.2)'
             }}>
               {formData.address && !formData.address.includes(',') && /^\d+\s/.test(formData.address) ? (
-                <>Tab to auto-complete: {formData.address.trim()}, {addressSuggestion}</>
+                <>📍 Press Tab to complete: {formData.address.trim()}, {addressSuggestion}</>
               ) : (
-                <>Based on your last location: {addressSuggestion}</>
+                <>📍 Last location: <strong>{addressSuggestion}</strong> - Click button above to use</>
               )}
             </div>
           )}
