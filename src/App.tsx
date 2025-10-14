@@ -45,7 +45,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableLocationCard({ location, onEdit, onDelete }: any) {
+function SortableLocationCard({ location, onEdit, onDelete, arrivalTime, departureTime, travelTime, travelDistance, isFirst, isLast }: any) {
   const {
     attributes,
     listeners,
@@ -67,6 +67,12 @@ function SortableLocationCard({ location, onEdit, onDelete }: any) {
         onEdit={onEdit}
         onDelete={onDelete}
         isDragging={isDragging}
+        arrivalTime={arrivalTime}
+        departureTime={departureTime}
+        travelTime={travelTime}
+        travelDistance={travelDistance}
+        isFirst={isFirst}
+        isLast={isLast}
       />
     </div>
   );
@@ -464,14 +470,49 @@ function App() {
                     strategy={verticalListSortingStrategy}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                      {locations.map((location) => (
-                        <SortableLocationCard
-                          key={location.id}
-                          location={location}
-                          onEdit={handleEditLocation}
-                          onDelete={handleDeleteLocation}
-                        />
-                      ))}
+                      {locations.map((location, index) => {
+                        // Calculate arrival and departure times
+                        let arrivalTime: string | undefined;
+                        let departureTime: string | undefined;
+                        let travelTime: number | undefined;
+                        let travelDistance: number | undefined;
+
+                        if (index === 0) {
+                          // First location - arrival time is start time
+                          arrivalTime = startTime;
+                        } else if (segments.length > 0 && index <= segments.length) {
+                          // Get travel info from previous location
+                          const prevSegment = segments[index - 1];
+                          if (prevSegment) {
+                            arrivalTime = prevSegment.arrivalTime;
+                            travelTime = prevSegment.duration;
+                            travelDistance = prevSegment.distance;
+                          }
+                        }
+
+                        // Calculate departure time for non-last locations
+                        if (index < locations.length - 1 && segments.length > 0 && index < segments.length) {
+                          const segment = segments[index];
+                          if (segment) {
+                            departureTime = segment.departureTime;
+                          }
+                        }
+
+                        return (
+                          <SortableLocationCard
+                            key={location.id}
+                            location={location}
+                            onEdit={handleEditLocation}
+                            onDelete={handleDeleteLocation}
+                            arrivalTime={arrivalTime}
+                            departureTime={departureTime}
+                            travelTime={travelTime}
+                            travelDistance={travelDistance}
+                            isFirst={index === 0}
+                            isLast={index === locations.length - 1}
+                          />
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </DndContext>

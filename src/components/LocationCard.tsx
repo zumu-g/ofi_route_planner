@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Clock, Timer, Edit2, Trash2, GripVertical } from 'lucide-react';
+import { MapPin, Clock, Timer, Edit2, Trash2, GripVertical, Navigation, ArrowRight } from 'lucide-react';
 import type { Location } from '../types';
 import { motion } from 'framer-motion';
 
@@ -8,27 +8,67 @@ interface LocationCardProps {
   onEdit: (location: Location) => void;
   onDelete: (id: string) => void;
   isDragging?: boolean;
+  arrivalTime?: string;
+  departureTime?: string;
+  travelTime?: number;
+  travelDistance?: number;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export const LocationCard: React.FC<LocationCardProps> = ({ 
   location, 
   onEdit, 
   onDelete,
-  isDragging = false
+  isDragging = false,
+  arrivalTime,
+  departureTime,
+  travelTime,
+  travelDistance,
+  isFirst = false,
+  isLast = false
 }) => {
   return (
-    <motion.div
-      className="card"
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        display: 'flex',
-        gap: 'var(--spacing-md)',
-        alignItems: 'center',
-      }}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-    >
+    <>
+      {/* Travel time from previous location */}
+      {!isFirst && travelTime !== undefined && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 'var(--spacing-sm)',
+            margin: 'var(--spacing-md) 0',
+            color: 'var(--color-text-secondary)',
+            fontSize: '14px'
+          }}
+        >
+          <Navigation size={16} />
+          <span>{Math.round(travelTime)} min</span>
+          {travelDistance !== undefined && (
+            <>
+              <span>•</span>
+              <span>{travelDistance.toFixed(1)} km</span>
+            </>
+          )}
+          <ArrowRight size={16} />
+        </motion.div>
+      )}
+
+      <motion.div
+        className="card"
+        style={{
+          opacity: isDragging ? 0.5 : 1,
+          cursor: isDragging ? 'grabbing' : 'grab',
+          display: 'flex',
+          gap: 'var(--spacing-md)',
+          alignItems: 'center',
+        }}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+      >
       <div style={{ color: 'var(--color-text-tertiary)', cursor: 'grab' }}>
         <GripVertical size={20} />
       </div>
@@ -48,6 +88,16 @@ export const LocationCard: React.FC<LocationCardProps> = ({
             {location.type === 'openHome' ? 'Open Home' : 'Appointment'}
           </span>
           {location.name && <h4 style={{ margin: 0 }}>{location.name}</h4>}
+          {arrivalTime && (
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: 'var(--color-primary)'
+            }}>
+              {arrivalTime}
+            </span>
+          )}
         </div>
         
         <p style={{ 
@@ -78,6 +128,12 @@ export const LocationCard: React.FC<LocationCardProps> = ({
           </span>
           {location.startTime && (
             <span>{location.startTime} - {location.endTime}</span>
+          )}
+          {departureTime && !isLast && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+              <ArrowRight size={14} />
+              Depart: {departureTime}
+            </span>
           )}
         </div>
         
@@ -110,5 +166,6 @@ export const LocationCard: React.FC<LocationCardProps> = ({
         </button>
       </div>
     </motion.div>
+    </>
   );
 };
