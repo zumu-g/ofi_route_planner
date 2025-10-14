@@ -52,12 +52,19 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     
     let coordinates = formData.coordinates;
     if (!coordinates) {
+      console.log('Geocoding address:', formData.address);
       const geocodeResult = await geocodeAddress(formData.address);
       if (geocodeResult) {
         coordinates = {
           lat: geocodeResult.lat,
           lng: geocodeResult.lng,
         };
+        console.log('Geocoding successful:', coordinates);
+      } else {
+        console.error('Geocoding failed for address:', formData.address);
+        alert('Could not find coordinates for this address. Please check the address and try again.');
+        setIsGeocoding(false);
+        return;
       }
     }
     

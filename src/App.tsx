@@ -250,6 +250,35 @@ function App() {
                   Use Google Maps for distance calculations
                 </label>
               </div>
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: 'var(--spacing-xs)', 
+                  color: 'var(--color-text-secondary)', 
+                  fontSize: '14px' 
+                }}>
+                  Country for Address Search
+                </label>
+                <select
+                  value={localStorage.getItem('ofi-route-planner-settings') ? JSON.parse(localStorage.getItem('ofi-route-planner-settings') || '{}').defaultCountryCode || 'au' : 'au'}
+                  onChange={(e) => {
+                    const settings = JSON.parse(localStorage.getItem('ofi-route-planner-settings') || '{}');
+                    settings.defaultCountryCode = e.target.value;
+                    localStorage.setItem('ofi-route-planner-settings', JSON.stringify(settings));
+                    window.location.reload(); // Reload to apply new settings
+                  }}
+                  style={{ width: '200px' }}
+                >
+                  <option value="au">Australia</option>
+                  <option value="nz">New Zealand</option>
+                  <option value="us">United States</option>
+                  <option value="uk">United Kingdom</option>
+                  <option value="ca">Canada</option>
+                </select>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
+                  Addresses will be searched within this country
+                </div>
+              </div>
               {useGoogleMapsDistances && (
                 <div style={{ marginBottom: 'var(--spacing-md)' }}>
                   <label style={{ 

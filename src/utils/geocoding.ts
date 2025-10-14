@@ -8,8 +8,12 @@ export interface GeocodeResult {
 
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
   try {
+    // Get country code from settings or use default
+    const settings = JSON.parse(localStorage.getItem('ofi-route-planner-settings') || '{}');
+    const countryCode = settings.defaultCountryCode || 'au'; // Default to Australia
+    
     const response = await fetch(
-      `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+      `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5&countrycodes=${countryCode}&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'OFI Route Planner',
@@ -25,9 +29,20 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
 
     if (data.length > 0) {
       const result = data[0];
+      const lat = parseFloat(result.lat);
+      const lng = parseFloat(result.lon);
+      
+      // Validate coordinates
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        console.error('Invalid coordinates received:', { lat: result.lat, lon: result.lon });
+        return null;
+      }
+      
+      console.log('Geocoded address:', address, 'to coordinates:', { lat, lng });
+      
       return {
-        lat: parseFloat(result.lat),
-        lng: parseFloat(result.lon),
+        lat,
+        lng,
         displayName: result.display_name,
       };
     }

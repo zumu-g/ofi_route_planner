@@ -13,6 +13,7 @@ interface StorageData {
 interface Settings {
   useGoogleMapsDistances: boolean;
   googleMapsApiKey?: string;
+  defaultCountryCode?: string; // ISO country code for geocoding
 }
 
 interface LastLocationData {
