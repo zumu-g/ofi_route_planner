@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, 
   Map, 
@@ -20,6 +20,7 @@ import {
   calculateTotalDistance, 
   calculateTotalDuration 
 } from './utils/route';
+import { storage } from './utils/storage';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -70,7 +71,10 @@ function SortableLocationCard({ location, onEdit, onDelete }: any) {
 }
 
 function App() {
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<Location[]>(() => {
+    // Load saved locations on initial render
+    return storage.loadLocations();
+  });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [routeDate, setRouteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -79,6 +83,15 @@ function App() {
   const [view, setView] = useState<'list' | 'map' | 'timeline'>('list');
   const [showExportModal, setShowExportModal] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [useGoogleMapsDistances, setUseGoogleMapsDistances] = useState(() => {
+    const settings = storage.loadSettings();
+    return settings.useGoogleMapsDistances;
+  });
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState(() => {
+    const settings = storage.loadSettings();
+    return settings.googleMapsApiKey || '';
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -86,6 +99,16 @@ function App() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Save locations whenever they change
+  useEffect(() => {
+    storage.saveLocations(locations);
+  }, [locations]);
+
+  // Save settings whenever they change
+  useEffect(() => {
+    storage.saveSettings({ useGoogleMapsDistances, googleMapsApiKey });
+  }, [useGoogleMapsDistances, googleMapsApiKey]);
 
   useEffect(() => {
     if (locations.length > 1) {
@@ -203,6 +226,63 @@ function App() {
         margin: '0 auto',
         width: '100%',
       }}>
+        {/* Settings Panel */}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              className="card fade-in"
+              style={{ marginBottom: 'var(--spacing-lg)' }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Settings</h3>
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                  <input
+                    type="checkbox"
+                    checked={useGoogleMapsDistances}
+                    onChange={(e) => setUseGoogleMapsDistances(e.target.checked)}
+                  />
+                  Use Google Maps for distance calculations
+                </label>
+              </div>
+              {useGoogleMapsDistances && (
+                <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: 'var(--spacing-xs)', 
+                    color: 'var(--color-text-secondary)', 
+                    fontSize: '14px' 
+                  }}>
+                    Google Maps API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={googleMapsApiKey}
+                    onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                    placeholder="Enter your Google Maps API key"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    if (confirm('Are you sure you want to clear all locations?')) {
+                      setLocations([]);
+                      storage.clearLocations();
+                    }
+                  }}
+                >
+                  Clear All Locations
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Route settings */}
         <div className="card fade-in" style={{ marginBottom: 'var(--spacing-lg)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -251,6 +331,13 @@ function App() {
             </div>
             
             <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+              <button
+                className="btn-ghost"
+                onClick={() => setShowSettings(!showSettings)}
+                title="Settings"
+              >
+                <Settings size={18} />
+              </button>
               <button
                 className="btn-secondary"
                 onClick={handleOptimizeRoute}
