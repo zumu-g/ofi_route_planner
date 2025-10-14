@@ -148,6 +148,11 @@ export const storage = {
           lastLocationData.suburb = lastLocationData.suburb || statePostcodeMatch[1].trim();
           lastLocationData.state = statePostcodeMatch[2].toUpperCase();
           lastLocationData.postcode = statePostcodeMatch[3];
+        } else {
+          // Fallback: save the whole address as suburb if no pattern matches
+          // This handles cases like "23 brune" where we can't extract specific parts
+          console.log('No pattern matched, saving as fallback suburb');
+          lastLocationData.suburb = singlePart;
         }
       }
       
