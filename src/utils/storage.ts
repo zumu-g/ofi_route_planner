@@ -151,7 +151,7 @@ export const storage = {
         } else {
           // Fallback: save the whole address as suburb if no pattern matches
           // This handles cases like "23 brune" where we can't extract specific parts
-          console.log('No pattern matched, saving as fallback suburb');
+          console.log('No pattern matched, saving as fallback suburb:', singlePart);
           lastLocationData.suburb = singlePart;
         }
       }
