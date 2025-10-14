@@ -1,4 +1,4 @@
-import { Location } from '../types';
+import type { Location } from '../types';
 
 const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';

@@ -1,4 +1,4 @@
-import { Location, Route, RouteSegment } from '../types';
+import type { Location, RouteSegment } from '../types';
 import { format, parse, addMinutes } from 'date-fns';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -44,7 +44,7 @@ export async function calculateDistance(from: Location, to: Location): Promise<{
   return { distance, duration };
 }
 
-export async function optimizeRoute(locations: Location[], startTime: string): Promise<Location[]> {
+export async function optimizeRoute(locations: Location[]): Promise<Location[]> {
   if (locations.length <= 2) return locations;
 
   // Simple nearest neighbor algorithm

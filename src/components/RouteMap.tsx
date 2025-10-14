@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
-import { Location } from '../types';
+import type { Location } from '../types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 

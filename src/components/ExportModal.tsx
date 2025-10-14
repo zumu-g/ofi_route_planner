@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Smartphone, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Location, ExportOptions } from '../types';
+import type { Location, ExportOptions } from '../types';
 import { createCalendarEvent, exportCalendarEvents } from '../utils/calendar';
 
 interface ExportModalProps {

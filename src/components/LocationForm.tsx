@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MapPin, Clock, Timer, Plus, X } from 'lucide-react';
-import { Location } from '../types';
+import type { Location } from '../types';
 import { geocodeAddress } from '../utils/geocoding';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface LocationFormProps {
   onAdd: (location: Location) => void;

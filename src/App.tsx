@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
   Map, 
@@ -8,7 +8,7 @@ import {
   Calendar,
   Settings
 } from 'lucide-react';
-import { Location, RouteSegment } from './types';
+import type { Location, RouteSegment } from './types';
 import { LocationForm } from './components/LocationForm';
 import { LocationCard } from './components/LocationCard';
 import { RouteMap } from './components/RouteMap';
@@ -30,8 +30,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -153,7 +153,7 @@ function App() {
     if (locations.length < 2) return;
     
     setIsOptimizing(true);
-    const optimizedLocations = await optimizeRoute(locations, startTime);
+    const optimizedLocations = await optimizeRoute(locations);
     setLocations(optimizedLocations);
     setIsOptimizing(false);
   };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Clock, Timer, Edit2, Trash2, GripVertical } from 'lucide-react';
-import { Location } from '../types';
+import type { Location } from '../types';
 import { motion } from 'framer-motion';
 
 interface LocationCardProps {
