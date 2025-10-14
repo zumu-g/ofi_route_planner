@@ -2,7 +2,7 @@ import type { Location } from '../types';
 
 const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';
-const LAST_LOCATION_KEY = 'ofi-route-planner-last-location';
+const LAST_LOCATION_KEY = 'ofi-route-planner-last-location-v4'; // Changed key to force fresh start
 const SAVED_ROUTES_KEY = 'ofi-route-planner-saved-routes';
 
 interface StorageData {
@@ -89,61 +89,45 @@ export const storage = {
   },
 
   saveLastLocation: (address: string): void => {
-    try {
-      console.log('[v3] SIMPLE: Saving address:', address);
-      
-      // Simple approach: just save the full address
-      // We'll extract meaningful parts for display
-      const lastLocationData: LastLocationData = {};
-      
-      // Always save the full address as a fallback
-      lastLocationData.suburb = address;
-      
-      // Try to extract state and postcode if they exist
-      const statePostcodeMatch = address.match(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*(\d{4})$/i);
-      if (statePostcodeMatch) {
-        lastLocationData.state = statePostcodeMatch[1].toUpperCase();
-        lastLocationData.postcode = statePostcodeMatch[2];
-        
-        // Remove state and postcode from suburb
-        lastLocationData.suburb = address.replace(/\s*(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*\d{4}$/i, '').trim();
-      }
-      
-      // If address has comma, take part after last comma as location hint
-      const parts = address.split(',');
-      if (parts.length > 1) {
-        const lastPart = parts[parts.length - 1].trim();
-        // If last part doesn't have state/postcode, use it as suburb
-        if (!statePostcodeMatch) {
-          lastLocationData.suburb = lastPart;
-        }
-      }
-      
-      console.log('[v3] SIMPLE: Saving data:', lastLocationData);
-      localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(lastLocationData));
-      
-      // Verify it saved
-      const saved = localStorage.getItem(LAST_LOCATION_KEY);
-      console.log('[v3] SIMPLE: Verified in localStorage:', saved);
-    } catch (error) {
-      console.error('[v3] Failed to save last location:', error);
-    }
+    // SUPER SIMPLE V4 - Just save the whole address
+    console.log('[V4] Saving address:', address);
+    
+    // Just save it directly - no parsing
+    const data = { fullAddress: address };
+    const json = JSON.stringify(data);
+    
+    console.log('[V4] Saving to localStorage:', json);
+    localStorage.setItem(LAST_LOCATION_KEY, json);
+    
+    // Verify immediately
+    const check = localStorage.getItem(LAST_LOCATION_KEY);
+    console.log('[V4] Verified in storage:', check);
   },
 
   loadLastLocation: (): LastLocationData => {
+    console.log('[V4] Loading last location');
+    const data = localStorage.getItem(LAST_LOCATION_KEY);
+    console.log('[V4] Raw from storage:', data);
+    
+    if (!data) {
+      console.log('[V4] No data found');
+      return {};
+    }
+    
     try {
-      const data = localStorage.getItem(LAST_LOCATION_KEY);
-      console.log('loadLastLocation - Raw data from localStorage:', data);
-      if (!data) {
-        console.log('loadLastLocation - No data found');
-        return {};
+      const parsed = JSON.parse(data);
+      console.log('[V4] Parsed:', parsed);
+      
+      // Handle new format
+      if (parsed.fullAddress) {
+        console.log('[V4] Using fullAddress:', parsed.fullAddress);
+        return { suburb: parsed.fullAddress };
       }
       
-      const parsed = JSON.parse(data);
-      console.log('loadLastLocation - Parsed data:', parsed);
+      // Fallback for any old format
       return parsed;
     } catch (error) {
-      console.error('Failed to load last location:', error);
+      console.error('[V4] Parse error:', error);
       return {};
     }
   },

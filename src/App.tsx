@@ -16,6 +16,7 @@ import { RouteMap } from './components/RouteMap';
 import { RouteTimeline } from './components/RouteTimeline';
 import { ExportModal } from './components/ExportModal';
 import { SavedRoutesModal } from './components/SavedRoutesModal';
+import { DebugPrepopulation } from './components/DebugPrepopulation';
 import { 
   generateRouteSegments, 
   optimizeRoute, 
@@ -574,6 +575,9 @@ function App() {
         routeDate={routeDate}
         startTime={startTime}
       />
+      
+      {/* Debug Component - Remove in production */}
+      <DebugPrepopulation />
     </div>
   );
 }

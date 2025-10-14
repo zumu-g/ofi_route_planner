@@ -26,34 +26,19 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [addressSuggestion, setAddressSuggestion] = useState<string>('');
 
   useEffect(() => {
-    console.log('[v3] LocationForm mounted. EditLocation:', editLocation);
+    console.log('[V4] LocationForm mounted. EditLocation:', editLocation);
     
     if (!editLocation) {
-      // Always try to load prepopulation data
       const lastLocation = storage.loadLastLocation();
-      console.log('[v3] Loaded from storage:', lastLocation);
+      console.log('[V4] Got from storage:', lastLocation);
       
-      // Build suggestion from whatever we have
+      // Super simple - just use whatever we have
       if (lastLocation && lastLocation.suburb) {
-        let suggestion = lastLocation.suburb;
-        
-        // Add state and postcode if available
-        if (lastLocation.state || lastLocation.postcode) {
-          const parts = [suggestion];
-          if (lastLocation.state && lastLocation.postcode) {
-            parts.push(`${lastLocation.state} ${lastLocation.postcode}`);
-          } else if (lastLocation.state) {
-            parts.push(lastLocation.state);
-          } else if (lastLocation.postcode) {
-            parts.push(lastLocation.postcode);
-          }
-          suggestion = parts.join(', ');
-        }
-        
-        setAddressSuggestion(suggestion);
-        console.log('[v3] Set suggestion:', suggestion);
+        setAddressSuggestion(lastLocation.suburb);
+        console.log('[V4] Set suggestion to:', lastLocation.suburb);
       } else {
-        console.log('[v3] No prepopulation data available');
+        console.log('[V4] No suggestion available');
+        setAddressSuggestion('');
       }
     } else {
       setAddressSuggestion('');
@@ -101,12 +86,8 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     };
     
     // Save the address details for future prepopulation
-    console.log('[v3] Saving location address for prepopulation:', location.address);
+    console.log('[V4] SAVING ADDRESS:', location.address);
     storage.saveLastLocation(location.address);
-    
-    // Immediate verification
-    const savedData = localStorage.getItem('ofi-route-planner-last-location');
-    console.log('[v3] Verified save - localStorage now contains:', savedData);
     
     onAdd(location);
   };
