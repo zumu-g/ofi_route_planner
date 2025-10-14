@@ -176,11 +176,14 @@ function App() {
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
-          <div>
-            <h1 style={{ margin: 0 }}>OFI Route Planner</h1>
-            <p className="text-secondary" style={{ margin: '4px 0 0' }}>
-              Plan your open home visits efficiently
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+            <img src="/logo.svg" alt="OFI Route Planner" style={{ width: 40, height: 40 }} />
+            <div>
+              <h1 style={{ margin: 0, fontSize: '24px' }}>OFI Route Planner</h1>
+              <p className="text-secondary" style={{ margin: '4px 0 0', fontSize: '14px' }}>
+                Optimize your property viewings
+              </p>
+            </div>
           </div>
           
           <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
