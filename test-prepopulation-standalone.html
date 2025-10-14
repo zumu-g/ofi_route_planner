@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prepopulation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .box { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        input { width: 300px; padding: 5px; }
+        button { margin: 5px; padding: 5px 10px; }
+        pre { background: #f0f0f0; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Direct Prepopulation Test</h1>
+    
+    <div class="box">
+        <h2>1. Save an Address</h2>
+        <input type="text" id="addressInput" value="23 brune" />
+        <button onclick="saveAddress()">Save Address</button>
+    </div>
+    
+    <div class="box">
+        <h2>2. Load Saved Address</h2>
+        <button onclick="loadAddress()">Load Address</button>
+        <div id="loadedAddress"></div>
+    </div>
+    
+    <div class="box">
+        <h2>3. Current localStorage</h2>
+        <button onclick="refreshStorage()">Refresh</button>
+        <button onclick="clearAll()">Clear All</button>
+        <pre id="storageContent"></pre>
+    </div>
+    
+    <script>
+        const KEY = 'ofi-route-planner-last-location-v4';
+        
+        function saveAddress() {
+            const address = document.getElementById('addressInput').value;
+            const data = { fullAddress: address };
+            localStorage.setItem(KEY, JSON.stringify(data));
+            console.log('Saved:', data);
+            refreshStorage();
+        }
+        
+        function loadAddress() {
+            const data = localStorage.getItem(KEY);
+            console.log('Loaded raw:', data);
+            
+            if (data) {
+                const parsed = JSON.parse(data);
+                console.log('Parsed:', parsed);
+                document.getElementById('loadedAddress').innerHTML = 
+                    '<strong>Loaded:</strong> ' + parsed.fullAddress;
+            } else {
+                document.getElementById('loadedAddress').innerHTML = 
+                    '<strong>No data found</strong>';
+            }
+        }
+        
+        function refreshStorage() {
+            const all = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('ofi')) {
+                    all[key] = localStorage.getItem(key);
+                }
+            }
+            document.getElementById('storageContent').textContent = 
+                JSON.stringify(all, null, 2);
+        }
+        
+        function clearAll() {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && key.includes('ofi')) {
+                    localStorage.removeItem(key);
+                }
+            }
+            refreshStorage();
+        }
+        
+        // Initial load
+        refreshStorage();
+    </script>
+</body>
+</html>

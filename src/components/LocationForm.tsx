@@ -12,6 +12,9 @@ interface LocationFormProps {
 }
 
 export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, editLocation }) => {
+  // Log immediately on render
+  console.log('[V4-RENDER] LocationForm rendering. EditLocation:', editLocation);
+  
   const [formData, setFormData] = useState<Partial<Location>>({
     address: '',
     name: '',
@@ -26,24 +29,35 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [addressSuggestion, setAddressSuggestion] = useState<string>('');
 
   useEffect(() => {
-    console.log('[V4] LocationForm mounted. EditLocation:', editLocation);
+    console.log('[V4-EFFECT] useEffect running. EditLocation:', editLocation);
     
     if (!editLocation) {
+      console.log('[V4-EFFECT] No edit location, loading prepopulation...');
+      
+      // Direct localStorage check
+      const directCheck = localStorage.getItem('ofi-route-planner-last-location-v4');
+      console.log('[V4-DIRECT] Direct localStorage check:', directCheck);
+      
       const lastLocation = storage.loadLastLocation();
-      console.log('[V4] Got from storage:', lastLocation);
+      console.log('[V4-EFFECT] Got from storage.loadLastLocation():', lastLocation);
       
       // Super simple - just use whatever we have
       if (lastLocation && lastLocation.suburb) {
+        console.log('[V4-EFFECT] Setting suggestion to:', lastLocation.suburb);
         setAddressSuggestion(lastLocation.suburb);
-        console.log('[V4] Set suggestion to:', lastLocation.suburb);
+        console.log('[V4-EFFECT] addressSuggestion state should now be:', lastLocation.suburb);
       } else {
-        console.log('[V4] No suggestion available');
+        console.log('[V4-EFFECT] No suggestion available, clearing');
         setAddressSuggestion('');
       }
     } else {
+      console.log('[V4-EFFECT] Edit mode, clearing suggestion');
       setAddressSuggestion('');
     }
   }, [editLocation]);
+  
+  // Log the current state
+  console.log('[V4-STATE] Current addressSuggestion:', addressSuggestion);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +142,17 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             value={formData.name || ''}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+        </div>
+        
+        {/* DEBUG: Show suggestion state clearly */}
+        <div style={{ 
+          background: 'yellow', 
+          padding: '10px', 
+          margin: '10px 0',
+          border: '2px solid red',
+          fontWeight: 'bold'
+        }}>
+          DEBUG: addressSuggestion = "{addressSuggestion}"
         </div>
         
         <div>
