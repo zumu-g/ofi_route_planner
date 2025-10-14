@@ -106,11 +106,15 @@ export const storage = {
         if (parts.length === 2) {
           // Format: "Street, Suburb State Postcode"
           let suburb = parts[1];
+          console.log('Extracting from 2-part address, second part:', suburb);
           // Remove state and postcode to get just suburb
-          suburb = suburb.replace(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b\s*\d{4}$/i, '').trim();
+          // Updated regex to be more flexible
+          suburb = suburb.replace(/\s*(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*\d{4}$/i, '').trim();
+          console.log('Suburb after cleanup:', suburb);
           if (suburb) lastLocationData.suburb = suburb;
         } else if (parts.length >= 3) {
           // Format: "Street, Suburb, State Postcode" or more complex
+          console.log('Extracting from multi-part address:', parts);
           lastLocationData.suburb = parts[1]; // Second part is usually suburb
           if (parts.length >= 4) {
             lastLocationData.city = parts[2]; // Third part might be city

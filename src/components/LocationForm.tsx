@@ -29,8 +29,8 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     // Load last location data when form opens for new location
     if (!editLocation) {
       const lastLocation = storage.loadLastLocation();
-      console.log('Last location data:', lastLocation);
-      if (lastLocation.city || lastLocation.suburb) {
+      console.log('Loading last location data for prepopulation:', lastLocation);
+      if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
         const parts = [];
         if (lastLocation.suburb) parts.push(lastLocation.suburb);
         if (lastLocation.city) parts.push(lastLocation.city);
@@ -42,7 +42,12 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
         const suggestion = parts.join(', ');
         setAddressSuggestion(suggestion);
         console.log('Address suggestion set:', suggestion);
+      } else {
+        console.log('No previous location data found for prepopulation');
       }
+    } else {
+      // Clear suggestion when editing
+      setAddressSuggestion('');
     }
   }, [editLocation]);
 
@@ -137,7 +142,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           </label>
           <input
             type="text"
-            placeholder={addressSuggestion ? `123 Main St, ${addressSuggestion}` : "123 Main St, City"}
+            placeholder={addressSuggestion ? `e.g., 123 Main St, ${addressSuggestion}` : "123 Main St, City"}
             value={formData.address || ''}
             onChange={(e) => {
               const newAddress = e.target.value;
