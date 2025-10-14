@@ -3,6 +3,7 @@ import type { Location } from '../types';
 const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';
 const LAST_LOCATION_KEY = 'ofi-route-planner-last-location';
+const SAVED_ROUTES_KEY = 'ofi-route-planner-saved-routes';
 
 interface StorageData {
   locations: Location[];
@@ -21,6 +22,15 @@ interface LastLocationData {
   city?: string;
   state?: string;
   postcode?: string;
+}
+
+interface SavedRoute {
+  id: string;
+  name: string;
+  locations: Location[];
+  savedAt: string;
+  routeDate?: string;
+  startTime?: string;
 }
 
 export const storage = {
@@ -178,6 +188,38 @@ export const storage = {
     } catch (error) {
       console.error('Failed to load last location:', error);
       return {};
+    }
+  },
+
+  saveSavedRoute: (route: SavedRoute): void => {
+    try {
+      const existingRoutes = storage.loadSavedRoutes();
+      const updatedRoutes = existingRoutes.filter(r => r.id !== route.id);
+      updatedRoutes.push(route);
+      localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(updatedRoutes));
+    } catch (error) {
+      console.error('Failed to save route:', error);
+    }
+  },
+
+  loadSavedRoutes: (): SavedRoute[] => {
+    try {
+      const data = localStorage.getItem(SAVED_ROUTES_KEY);
+      if (!data) return [];
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Failed to load saved routes:', error);
+      return [];
+    }
+  },
+
+  deleteSavedRoute: (id: string): void => {
+    try {
+      const existingRoutes = storage.loadSavedRoutes();
+      const updatedRoutes = existingRoutes.filter(r => r.id !== id);
+      localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(updatedRoutes));
+    } catch (error) {
+      console.error('Failed to delete saved route:', error);
     }
   }
 };

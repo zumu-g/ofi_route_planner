@@ -6,7 +6,8 @@ import {
   Download,
   Navigation,
   Calendar,
-  Settings
+  Settings,
+  FolderOpen
 } from 'lucide-react';
 import type { Location, RouteSegment } from './types';
 import { LocationForm } from './components/LocationForm';
@@ -14,6 +15,7 @@ import { LocationCard } from './components/LocationCard';
 import { RouteMap } from './components/RouteMap';
 import { RouteTimeline } from './components/RouteTimeline';
 import { ExportModal } from './components/ExportModal';
+import { SavedRoutesModal } from './components/SavedRoutesModal';
 import { 
   generateRouteSegments, 
   optimizeRoute, 
@@ -82,6 +84,7 @@ function App() {
   const [segments, setSegments] = useState<RouteSegment[]>([]);
   const [view, setView] = useState<'list' | 'map' | 'timeline'>('list');
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showSavedRoutesModal, setShowSavedRoutesModal] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [useGoogleMapsDistances, setUseGoogleMapsDistances] = useState(() => {
@@ -156,6 +159,12 @@ function App() {
     const optimizedLocations = await optimizeRoute(locations);
     setLocations(optimizedLocations);
     setIsOptimizing(false);
+  };
+
+  const handleLoadRoute = (loadedLocations: Location[], loadedRouteDate?: string, loadedStartTime?: string) => {
+    setLocations(loadedLocations);
+    if (loadedRouteDate) setRouteDate(loadedRouteDate);
+    if (loadedStartTime) setStartTime(loadedStartTime);
   };
 
   const totalDistance = calculateTotalDistance(segments);
@@ -381,6 +390,14 @@ function App() {
               
               <button
                 className="btn-secondary"
+                onClick={() => setShowSavedRoutesModal(true)}
+              >
+                <FolderOpen size={18} />
+                Saved Routes
+              </button>
+              
+              <button
+                className="btn-secondary"
                 onClick={() => setShowExportModal(true)}
                 disabled={locations.length === 0}
               >
@@ -504,6 +521,16 @@ function App() {
         date={routeDate}
         startTime={startTime}
         segments={segments}
+      />
+
+      {/* Saved Routes Modal */}
+      <SavedRoutesModal
+        isOpen={showSavedRoutesModal}
+        onClose={() => setShowSavedRoutesModal(false)}
+        currentLocations={locations}
+        onLoadRoute={handleLoadRoute}
+        routeDate={routeDate}
+        startTime={startTime}
       />
     </div>
   );
