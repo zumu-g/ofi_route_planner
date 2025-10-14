@@ -29,25 +29,28 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     console.log('LocationForm mounted/updated. EditLocation:', editLocation);
     // Load last location data when form opens for new location
     if (!editLocation) {
-      const lastLocation = storage.loadLastLocation();
-      console.log('Loading last location data for prepopulation:', lastLocation);
-      console.log('Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
-      
-      if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
-        const parts = [];
-        if (lastLocation.suburb) parts.push(lastLocation.suburb);
-        if (lastLocation.city) parts.push(lastLocation.city);
-        if (lastLocation.state && lastLocation.postcode) {
-          parts.push(`${lastLocation.state} ${lastLocation.postcode}`);
-        } else if (lastLocation.postcode) {
-          parts.push(lastLocation.postcode);
+      // Small delay to ensure localStorage is up to date
+      setTimeout(() => {
+        const lastLocation = storage.loadLastLocation();
+        console.log('Loading last location data for prepopulation:', lastLocation);
+        console.log('Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
+        
+        if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
+          const parts = [];
+          if (lastLocation.suburb) parts.push(lastLocation.suburb);
+          if (lastLocation.city) parts.push(lastLocation.city);
+          if (lastLocation.state && lastLocation.postcode) {
+            parts.push(`${lastLocation.state} ${lastLocation.postcode}`);
+          } else if (lastLocation.postcode) {
+            parts.push(lastLocation.postcode);
+          }
+          const suggestion = parts.join(', ');
+          setAddressSuggestion(suggestion);
+          console.log('Address suggestion set:', suggestion);
+        } else {
+          console.log('No previous location data found for prepopulation');
         }
-        const suggestion = parts.join(', ');
-        setAddressSuggestion(suggestion);
-        console.log('Address suggestion set:', suggestion);
-      } else {
-        console.log('No previous location data found for prepopulation');
-      }
+      }, 100);
     } else {
       // Clear suggestion when editing
       setAddressSuggestion('');
