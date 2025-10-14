@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Timer, Plus, X } from 'lucide-react';
 import type { Location } from '../types';
 import { geocodeAddress } from '../utils/geocoding';
 import { motion } from 'framer-motion';
+import { storage } from '../utils/storage';
 
 interface LocationFormProps {
   onAdd: (location: Location) => void;
@@ -22,6 +23,25 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   });
 
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [addressSuggestion, setAddressSuggestion] = useState<string>('');
+
+  useEffect(() => {
+    // Load last location data when form opens for new location
+    if (!editLocation) {
+      const lastLocation = storage.loadLastLocation();
+      if (lastLocation.city || lastLocation.suburb) {
+        const parts = [];
+        if (lastLocation.suburb) parts.push(lastLocation.suburb);
+        if (lastLocation.city) parts.push(lastLocation.city);
+        if (lastLocation.state && lastLocation.postcode) {
+          parts.push(`${lastLocation.state} ${lastLocation.postcode}`);
+        } else if (lastLocation.postcode) {
+          parts.push(lastLocation.postcode);
+        }
+        setAddressSuggestion(parts.join(', '));
+      }
+    }
+  }, [editLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +75,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
       startTime: formData.startTime,
       endTime: formData.endTime,
     };
+    
+    // Save the address details for future prepopulation
+    storage.saveLastLocation(location.address);
     
     onAdd(location);
   };
@@ -104,11 +127,46 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           </label>
           <input
             type="text"
-            placeholder="123 Main St, City"
+            placeholder={addressSuggestion ? `123 Main St, ${addressSuggestion}` : "123 Main St, City"}
             value={formData.address || ''}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            onChange={(e) => {
+              const newAddress = e.target.value;
+              setFormData({ ...formData, address: newAddress });
+              
+              // Auto-append suggestion if user types a street number/name
+              if (addressSuggestion && newAddress && !newAddress.includes(',')) {
+                const hasNumber = /^\d+\s/.test(newAddress);
+                const hasStreetName = newAddress.trim().split(' ').length >= 2;
+                if (hasNumber && hasStreetName) {
+                  // Check if user pressed space after street name
+                  if (newAddress.endsWith(' ')) {
+                    setFormData({ ...formData, address: `${newAddress.trim()}, ${addressSuggestion}` });
+                  }
+                }
+              }
+            }}
+            onKeyDown={(e) => {
+              // Auto-complete with Tab key
+              if (e.key === 'Tab' && addressSuggestion && formData.address && !formData.address.includes(',')) {
+                const hasNumber = /^\d+\s/.test(formData.address);
+                const hasStreetName = formData.address.trim().split(' ').length >= 2;
+                if (hasNumber && hasStreetName) {
+                  e.preventDefault();
+                  setFormData({ ...formData, address: `${formData.address.trim()}, ${addressSuggestion}` });
+                }
+              }
+            }}
             required
           />
+          {addressSuggestion && !formData.address?.includes(',') && formData.address && (
+            <div style={{
+              fontSize: '12px',
+              color: 'var(--color-text-tertiary)',
+              marginTop: '4px'
+            }}>
+              Press Tab to complete: {formData.address}, {addressSuggestion}
+            </div>
+          )}
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>

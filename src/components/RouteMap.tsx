@@ -34,7 +34,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
   }
   
   const bounds = validLocations.map(loc => [loc.coordinates!.lat, loc.coordinates!.lng] as [number, number]);
-  const center = bounds[0] || [-41.2865, 174.7762]; // Default to Wellington, NZ
+  const center = bounds[0] || [-33.8688, 151.2093]; // Default to Sydney, Australia
   
   const polylinePositions = validLocations.map(loc => [
     loc.coordinates!.lat,
@@ -50,8 +50,8 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
         bounds={bounds.length > 1 ? bounds : undefined}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         
         {validLocations.map((location, index) => (
@@ -74,7 +74,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
         {polylinePositions.length > 1 && (
           <Polyline 
             positions={polylinePositions}
-            color="#007AFF"
+            color="#1e40af"
             weight={3}
             opacity={0.7}
           />

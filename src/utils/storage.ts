@@ -2,6 +2,7 @@ import type { Location } from '../types';
 
 const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';
+const LAST_LOCATION_KEY = 'ofi-route-planner-last-location';
 
 interface StorageData {
   locations: Location[];
@@ -12,6 +13,13 @@ interface StorageData {
 interface Settings {
   useGoogleMapsDistances: boolean;
   googleMapsApiKey?: string;
+}
+
+interface LastLocationData {
+  suburb?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
 }
 
 export const storage = {
@@ -66,6 +74,54 @@ export const storage = {
     } catch (error) {
       console.error('Failed to load settings from localStorage:', error);
       return { useGoogleMapsDistances: false };
+    }
+  },
+
+  saveLastLocation: (address: string): void => {
+    try {
+      // Extract suburb/city from address
+      const parts = address.split(',').map(p => p.trim());
+      const lastLocationData: LastLocationData = {};
+      
+      if (parts.length >= 2) {
+        // Assuming format: "123 Street, Suburb, City, State Postcode"
+        // or "123 Street, City State Postcode"
+        const lastPart = parts[parts.length - 1];
+        const postcodeMatch = lastPart.match(/(\d{4,5})$/);
+        
+        if (postcodeMatch) {
+          lastLocationData.postcode = postcodeMatch[1];
+          const stateAndPostcode = lastPart;
+          const state = stateAndPostcode.replace(postcodeMatch[1], '').trim();
+          if (state) lastLocationData.state = state;
+        }
+        
+        if (parts.length >= 3) {
+          lastLocationData.city = parts[parts.length - 2];
+          if (parts.length >= 4) {
+            lastLocationData.suburb = parts[parts.length - 3];
+          }
+        } else if (parts.length === 2) {
+          // Just street and city
+          lastLocationData.city = parts[1].replace(/\s*\d{4,5}$/, '').replace(/\s+\w{2,3}$/, '').trim();
+        }
+      }
+      
+      localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(lastLocationData));
+    } catch (error) {
+      console.error('Failed to save last location:', error);
+    }
+  },
+
+  loadLastLocation: (): LastLocationData => {
+    try {
+      const data = localStorage.getItem(LAST_LOCATION_KEY);
+      if (!data) return {};
+      
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Failed to load last location:', error);
+      return {};
     }
   }
 };
