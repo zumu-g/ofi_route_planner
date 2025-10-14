@@ -61,7 +61,7 @@ function SortableLocationCard({ location, onEdit, onDelete, arrivalTime, departu
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes}>
       <LocationCard
         location={location}
         onEdit={onEdit}
@@ -73,6 +73,7 @@ function SortableLocationCard({ location, onEdit, onDelete, arrivalTime, departu
         travelDistance={travelDistance}
         isFirst={isFirst}
         isLast={isLast}
+        dragHandleProps={listeners}
       />
     </div>
   );

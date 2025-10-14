@@ -14,6 +14,7 @@ interface LocationCardProps {
   travelDistance?: number;
   isFirst?: boolean;
   isLast?: boolean;
+  dragHandleProps?: any;
 }
 
 export const LocationCard: React.FC<LocationCardProps> = ({ 
@@ -26,7 +27,8 @@ export const LocationCard: React.FC<LocationCardProps> = ({
   travelTime,
   travelDistance,
   isFirst = false,
-  isLast = false
+  isLast = false,
+  dragHandleProps
 }) => {
   return (
     <>
@@ -69,7 +71,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
       >
-      <div style={{ color: 'var(--color-text-tertiary)', cursor: 'grab' }}>
+      <div style={{ color: 'var(--color-text-tertiary)', cursor: 'grab' }} {...dragHandleProps}>
         <GripVertical size={20} />
       </div>
       
@@ -152,14 +154,20 @@ export const LocationCard: React.FC<LocationCardProps> = ({
       <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
         <button 
           className="btn-ghost" 
-          onClick={() => onEdit(location)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(location);
+          }}
           style={{ padding: '8px' }}
         >
           <Edit2 size={18} />
         </button>
         <button 
           className="btn-ghost" 
-          onClick={() => onDelete(location.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(location.id);
+          }}
           style={{ padding: '8px', color: 'var(--color-danger)' }}
         >
           <Trash2 size={18} />
