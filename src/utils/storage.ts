@@ -90,7 +90,7 @@ export const storage = {
 
   saveLastLocation: (address: string): void => {
     try {
-      console.log('Saving last location from address:', address);
+      console.log('[v2] Saving last location from address:', address);
       // Extract suburb/city from address
       const parts = address.split(',').map(p => p.trim());
       const lastLocationData: LastLocationData = {};
@@ -161,12 +161,13 @@ export const storage = {
         } else {
           // Fallback: save the whole address as suburb if no pattern matches
           // This handles cases like "23 brune" where we can't extract specific parts
-          console.log('No pattern matched, saving as fallback suburb:', singlePart);
+          console.log('[v2] No pattern matched, saving as fallback suburb:', singlePart);
           lastLocationData.suburb = singlePart;
         }
       }
       
-      console.log('Extracted location data:', lastLocationData);
+      console.log('[v2] Extracted location data:', lastLocationData);
+      console.log('[v2] About to save to localStorage:', JSON.stringify(lastLocationData));
       localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(lastLocationData));
     } catch (error) {
       console.error('Failed to save last location:', error);

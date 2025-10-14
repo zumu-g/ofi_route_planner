@@ -26,14 +26,14 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [addressSuggestion, setAddressSuggestion] = useState<string>('');
 
   useEffect(() => {
-    console.log('LocationForm mounted/updated. EditLocation:', editLocation);
+    console.log('[v2] LocationForm mounted/updated. EditLocation:', editLocation);
     // Load last location data when form opens for new location
     if (!editLocation) {
       // Small delay to ensure localStorage is up to date
       setTimeout(() => {
         const lastLocation = storage.loadLastLocation();
-        console.log('Loading last location data for prepopulation:', lastLocation);
-        console.log('Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
+        console.log('[v2] Loading last location data for prepopulation:', lastLocation);
+        console.log('[v2] Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
         
         if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
           const parts = [];
@@ -98,9 +98,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     };
     
     // Save the address details for future prepopulation
-    console.log('Saving location address for prepopulation:', location.address);
+    console.log('[v2] Saving location address for prepopulation:', location.address);
     storage.saveLastLocation(location.address);
-    console.log('After save, localStorage contains:', localStorage.getItem('ofi-route-planner-last-location'));
+    console.log('[v2] After save, localStorage contains:', localStorage.getItem('ofi-route-planner-last-location'));
     
     onAdd(location);
   };
