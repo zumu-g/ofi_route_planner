@@ -26,10 +26,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [addressSuggestion, setAddressSuggestion] = useState<string>('');
 
   useEffect(() => {
+    console.log('LocationForm mounted/updated. EditLocation:', editLocation);
     // Load last location data when form opens for new location
     if (!editLocation) {
       const lastLocation = storage.loadLastLocation();
       console.log('Loading last location data for prepopulation:', lastLocation);
+      console.log('Raw localStorage:', localStorage.getItem('ofi-route-planner-last-location'));
+      
       if (lastLocation && (lastLocation.city || lastLocation.suburb)) {
         const parts = [];
         if (lastLocation.suburb) parts.push(lastLocation.suburb);
@@ -92,7 +95,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     };
     
     // Save the address details for future prepopulation
+    console.log('Saving location address for prepopulation:', location.address);
     storage.saveLastLocation(location.address);
+    console.log('After save, localStorage contains:', localStorage.getItem('ofi-route-planner-last-location'));
     
     onAdd(location);
   };
@@ -139,6 +144,24 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
+            {addressSuggestion && !formData.address && (
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, address: addressSuggestion })}
+                style={{
+                  marginLeft: '8px',
+                  fontSize: '12px',
+                  padding: '2px 8px',
+                  background: 'var(--color-primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Use {addressSuggestion}
+              </button>
+            )}
           </label>
           <input
             type="text"
@@ -159,7 +182,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                 const streetTypes = ['st', 'street', 'rd', 'road', 'ave', 'avenue', 'dr', 'drive', 'ct', 'court', 'pl', 'place', 'way', 'lane', 'ln', 'blvd', 'boulevard', 'cres', 'crescent', 'tce', 'terrace', 'pde', 'parade'];
                 
                 // Check if the last word is a street type or if user added extra space
-                if (hasNumber && hasStreetName && (streetTypes.includes(lastWord) || newAddress.endsWith('  '))) {
+                if (hasNumber && hasStreetName && (streetTypes.includes(lastWord) || newAddress.endsWith('  ') || newAddress.endsWith(', '))) {
                   setFormData({ ...formData, address: `${newAddress.trim()}, ${addressSuggestion}` });
                 }
               }
@@ -177,13 +200,17 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             }}
             required
           />
-          {addressSuggestion && !formData.address?.includes(',') && formData.address && /^\d+\s/.test(formData.address) && (
+          {addressSuggestion && (
             <div style={{
               fontSize: '12px',
               color: 'var(--color-text-tertiary)',
               marginTop: '4px'
             }}>
-              Tab to auto-complete: {formData.address.trim()}, {addressSuggestion}
+              {formData.address && !formData.address.includes(',') && /^\d+\s/.test(formData.address) ? (
+                <>Tab to auto-complete: {formData.address.trim()}, {addressSuggestion}</>
+              ) : (
+                <>Based on your last location: {addressSuggestion}</>
+              )}
             </div>
           )}
         </div>
