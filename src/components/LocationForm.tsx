@@ -29,6 +29,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     // Load last location data when form opens for new location
     if (!editLocation) {
       const lastLocation = storage.loadLastLocation();
+      console.log('Last location data:', lastLocation);
       if (lastLocation.city || lastLocation.suburb) {
         const parts = [];
         if (lastLocation.suburb) parts.push(lastLocation.suburb);
@@ -38,7 +39,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
         } else if (lastLocation.postcode) {
           parts.push(lastLocation.postcode);
         }
-        setAddressSuggestion(parts.join(', '));
+        const suggestion = parts.join(', ');
+        setAddressSuggestion(suggestion);
+        console.log('Address suggestion set:', suggestion);
       }
     }
   }, [editLocation]);
@@ -142,13 +145,17 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               
               // Auto-append suggestion if user types a street number/name
               if (addressSuggestion && newAddress && !newAddress.includes(',')) {
-                const hasNumber = /^\d+\s/.test(newAddress);
-                const hasStreetName = newAddress.trim().split(' ').length >= 2;
-                if (hasNumber && hasStreetName) {
-                  // Check if user pressed space after street name
-                  if (newAddress.endsWith(' ')) {
-                    setFormData({ ...formData, address: `${newAddress.trim()}, ${addressSuggestion}` });
-                  }
+                const words = newAddress.trim().split(' ');
+                const hasNumber = /^\d+/.test(words[0] || '');
+                const hasStreetName = words.length >= 2 && words[1].length >= 2;
+                const lastWord = words[words.length - 1]?.toLowerCase() || '';
+                
+                // Common street types that indicate the address is complete
+                const streetTypes = ['st', 'street', 'rd', 'road', 'ave', 'avenue', 'dr', 'drive', 'ct', 'court', 'pl', 'place', 'way', 'lane', 'ln', 'blvd', 'boulevard', 'cres', 'crescent', 'tce', 'terrace', 'pde', 'parade'];
+                
+                // Check if the last word is a street type or if user added extra space
+                if (hasNumber && hasStreetName && (streetTypes.includes(lastWord) || newAddress.endsWith('  '))) {
+                  setFormData({ ...formData, address: `${newAddress.trim()}, ${addressSuggestion}` });
                 }
               }
             }}
@@ -165,13 +172,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             }}
             required
           />
-          {addressSuggestion && !formData.address?.includes(',') && formData.address && (
+          {addressSuggestion && !formData.address?.includes(',') && formData.address && /^\d+\s/.test(formData.address) && (
             <div style={{
               fontSize: '12px',
               color: 'var(--color-text-tertiary)',
               marginTop: '4px'
             }}>
-              Press Tab to complete: {formData.address}, {addressSuggestion}
+              Tab to auto-complete: {formData.address.trim()}, {addressSuggestion}
             </div>
           )}
         </div>

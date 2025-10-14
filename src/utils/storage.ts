@@ -80,34 +80,45 @@ export const storage = {
 
   saveLastLocation: (address: string): void => {
     try {
+      console.log('Saving last location from address:', address);
       // Extract suburb/city from address
       const parts = address.split(',').map(p => p.trim());
       const lastLocationData: LastLocationData = {};
       
       if (parts.length >= 2) {
-        // Assuming format: "123 Street, Suburb, City, State Postcode"
-        // or "123 Street, City State Postcode"
+        // Handle Australian format: "123 Street Name, Suburb State Postcode"
+        // or "123 Street Name, Suburb, State Postcode"
         const lastPart = parts[parts.length - 1];
-        const postcodeMatch = lastPart.match(/(\d{4,5})$/);
         
+        // Extract postcode (4 digits in Australia)
+        const postcodeMatch = lastPart.match(/(\d{4})$/);
         if (postcodeMatch) {
           lastLocationData.postcode = postcodeMatch[1];
-          const stateAndPostcode = lastPart;
-          const state = stateAndPostcode.replace(postcodeMatch[1], '').trim();
-          if (state) lastLocationData.state = state;
         }
         
-        if (parts.length >= 3) {
-          lastLocationData.city = parts[parts.length - 2];
+        // Extract state (2-3 letter abbreviation before postcode)
+        const stateMatch = lastPart.match(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b/i);
+        if (stateMatch) {
+          lastLocationData.state = stateMatch[1].toUpperCase();
+        }
+        
+        // Extract suburb/city
+        if (parts.length === 2) {
+          // Format: "Street, Suburb State Postcode"
+          let suburb = parts[1];
+          // Remove state and postcode to get just suburb
+          suburb = suburb.replace(/\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b\s*\d{4}$/i, '').trim();
+          if (suburb) lastLocationData.suburb = suburb;
+        } else if (parts.length >= 3) {
+          // Format: "Street, Suburb, State Postcode" or more complex
+          lastLocationData.suburb = parts[1]; // Second part is usually suburb
           if (parts.length >= 4) {
-            lastLocationData.suburb = parts[parts.length - 3];
+            lastLocationData.city = parts[2]; // Third part might be city
           }
-        } else if (parts.length === 2) {
-          // Just street and city
-          lastLocationData.city = parts[1].replace(/\s*\d{4,5}$/, '').replace(/\s+\w{2,3}$/, '').trim();
         }
       }
       
+      console.log('Extracted location data:', lastLocationData);
       localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(lastLocationData));
     } catch (error) {
       console.error('Failed to save last location:', error);
