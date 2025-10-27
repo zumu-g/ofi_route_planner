@@ -24,6 +24,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
 
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [lastSuburb, setLastSuburb] = useState<string>('');
+  const [currentSuburb, setCurrentSuburb] = useState<string>('');
 
   useEffect(() => {
     console.log('🔍 LocationForm useEffect - editLocation:', editLocation);
@@ -175,11 +176,24 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             type="text"
             placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "123 Main St, City"}
             value={formData.address || ''}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            onChange={(e) => {
+              const newAddress = e.target.value;
+              setFormData({ ...formData, address: newAddress });
+              
+              // Extract suburb from current input for live auto-population
+              const parts = newAddress.split(',');
+              if (parts.length >= 2) {
+                const extractedSuburb = parts.slice(1).join(',').trim();
+                setCurrentSuburb(extractedSuburb);
+              } else {
+                setCurrentSuburb('');
+              }
+            }}
             required
           />
-          {lastSuburb && (
-            console.log('🔍 Rendering auto-population button with lastSuburb:', lastSuburb),
+          
+          {/* Live auto-population based on previously saved suburb */}
+          {lastSuburb && !formData.address && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px'
@@ -187,12 +201,10 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               <button
                 type="button"
                 onClick={() => {
-                  // Pre-fill with a template using the last suburb
                   setFormData({ ...formData, address: `, ${lastSuburb}` });
-                  // Focus the input so user can type the street address
                   setTimeout(() => {
                     const inputs = document.querySelectorAll('input[type="text"]') as NodeListOf<HTMLInputElement>;
-                    const addressInput = inputs[1]; // Second input is the address field
+                    const addressInput = inputs[1];
                     if (addressInput) {
                       addressInput.focus();
                       addressInput.setSelectionRange(0, 0);
@@ -210,6 +222,41 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                 }}
               >
                 📍 Use previous location: {lastSuburb}
+              </button>
+            </div>
+          )}
+          
+          {/* Live auto-population based on current typing */}
+          {currentSuburb && formData.address && formData.address.includes(',') && (
+            <div style={{
+              fontSize: '13px',
+              marginTop: '6px',
+              padding: '8px',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              borderRadius: '4px',
+              border: '1px solid rgba(34, 197, 94, 0.2)'
+            }}>
+              <div style={{ color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
+                🏠 Detected suburb: <strong>{currentSuburb}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  // Use the detected suburb for the next location
+                  storage.saveLastSuburb(currentSuburb);
+                  setLastSuburb(currentSuburb);
+                }}
+                style={{
+                  fontSize: '11px',
+                  padding: '3px 8px',
+                  background: 'var(--color-success)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer'
+                }}
+              >
+                💾 Save for next location
               </button>
             </div>
           )}
