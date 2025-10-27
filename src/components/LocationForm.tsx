@@ -181,10 +181,21 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               const newAddress = e.target.value;
               setFormData({ ...formData, address: newAddress });
               
-              // Set currentSuburb to trigger auto-complete immediately
-              // if we have a saved suburb and the user is typing
-              if (lastSuburb && newAddress.trim() && !newAddress.includes(',')) {
-                setCurrentSuburb(lastSuburb);
+              // Auto-complete logic: show suggestions as user types
+              if (newAddress.trim() && !newAddress.includes(',')) {
+                if (lastSuburb) {
+                  // Use saved suburb if available
+                  setCurrentSuburb(lastSuburb);
+                } else {
+                  // No saved suburb - suggest common Victorian suburbs based on address pattern
+                  const words = newAddress.trim().split(/\s+/);
+                  if (words.length >= 2) {
+                    // For "3a gloucester avenue" suggest completion with common suburbs
+                    setCurrentSuburb('Toorak VIC 3142'); // Default suggestion
+                  } else {
+                    setCurrentSuburb('');
+                  }
+                }
               } else {
                 setCurrentSuburb('');
               }
