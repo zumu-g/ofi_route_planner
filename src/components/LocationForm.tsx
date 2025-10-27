@@ -149,7 +149,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             currentSuburb: "{currentSuburb}"<br/>
             address: "{formData.address || ''}"<br/>
             word count: {formData.address ? formData.address.trim().split(/\s+/).length : 0}<br/>
-            Live button should show: {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 4 ? 'YES' : 'NO'}<br/>
+            Live button should show: {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 3 ? 'YES' : 'NO'}<br/>
             <button 
               type="button" 
               onClick={() => {
@@ -189,12 +189,14 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               if (commaParts.length >= 2) {
                 extractedSuburb = commaParts.slice(1).join(',').trim();
               } else {
-                // Method 2: Australian format without commas (e.g., "23 Brunswick St Toorak VIC 3142")
+                // Method 2: Australian format without commas (e.g., "25 ashburn gve")
                 const words = newAddress.trim().split(/\s+/);
-                if (words.length >= 4) {
-                  // Look for pattern: number + street name + suburb + state/postcode
-                  const potentialSuburb = words.slice(3).join(' ');
-                  // Check if it looks like a suburb (contains letters, possibly VIC/NSW etc)
+                if (words.length >= 3) {
+                  // Look for pattern: number + street name + suburb...
+                  // For "25 ashburn gve" -> suburb would be "gve" 
+                  // But better to take last 1-2 words as potential suburb
+                  const potentialSuburb = words.slice(2).join(' ');
+                  // Check if it looks like a suburb (contains letters)
                   if (potentialSuburb && /[a-zA-Z]/.test(potentialSuburb)) {
                     extractedSuburb = potentialSuburb;
                   }
@@ -241,7 +243,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           )}
           
           {/* Live auto-population based on current typing */}
-          {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 4 && (
+          {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 3 && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px',
