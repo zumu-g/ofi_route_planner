@@ -146,9 +146,10 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           }}>
             <strong>🐛 DEBUG:</strong><br/>
             lastSuburb state: "{lastSuburb}"<br/>
-            lastSuburb length: {lastSuburb.length}<br/>
-            Button should show: {lastSuburb ? 'YES' : 'NO'}<br/>
-            localStorage direct: "{localStorage.getItem('ofi-route-planner-last-suburb') || 'null'}"<br/>
+            currentSuburb: "{currentSuburb}"<br/>
+            address: "{formData.address || ''}"<br/>
+            word count: {formData.address ? formData.address.trim().split(/\s+/).length : 0}<br/>
+            Live button should show: {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 4 ? 'YES' : 'NO'}<br/>
             <button 
               type="button" 
               onClick={() => {
@@ -181,13 +182,26 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               setFormData({ ...formData, address: newAddress });
               
               // Extract suburb from current input for live auto-population
-              const parts = newAddress.split(',');
-              if (parts.length >= 2) {
-                const extractedSuburb = parts.slice(1).join(',').trim();
-                setCurrentSuburb(extractedSuburb);
+              let extractedSuburb = '';
+              
+              // Method 1: Comma separated (e.g., "123 Smith St, Toorak, VIC")
+              const commaParts = newAddress.split(',');
+              if (commaParts.length >= 2) {
+                extractedSuburb = commaParts.slice(1).join(',').trim();
               } else {
-                setCurrentSuburb('');
+                // Method 2: Australian format without commas (e.g., "23 Brunswick St Toorak VIC 3142")
+                const words = newAddress.trim().split(/\s+/);
+                if (words.length >= 4) {
+                  // Look for pattern: number + street name + suburb + state/postcode
+                  const potentialSuburb = words.slice(3).join(' ');
+                  // Check if it looks like a suburb (contains letters, possibly VIC/NSW etc)
+                  if (potentialSuburb && /[a-zA-Z]/.test(potentialSuburb)) {
+                    extractedSuburb = potentialSuburb;
+                  }
+                }
               }
+              
+              setCurrentSuburb(extractedSuburb);
             }}
             required
           />
@@ -227,7 +241,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           )}
           
           {/* Live auto-population based on current typing */}
-          {currentSuburb && formData.address && formData.address.includes(',') && (
+          {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 4 && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px',
