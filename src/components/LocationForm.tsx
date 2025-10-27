@@ -187,7 +187,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               
               if (input.length >= 3 && !newAddress.includes(',')) {
                 // Generate realistic Melbourne/Victoria address suggestions
-                const suggestions = [];
+                const suggestions: string[] = [];
                 
                 // Common Victorian suburbs and street patterns
                 const suburbs = ['Toorak VIC 3142', 'South Yarra VIC 3141', 'Richmond VIC 3121', 'Prahran VIC 3181', 'St Kilda VIC 3182'];
