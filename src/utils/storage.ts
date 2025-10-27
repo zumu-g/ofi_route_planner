@@ -84,7 +84,9 @@ export const storage = {
 
   saveLastSuburb: (suburb: string): void => {
     try {
+      console.log('🔍 storage.saveLastSuburb called with:', suburb);
       localStorage.setItem(LAST_SUBURB_KEY, suburb);
+      console.log('🔍 Successfully saved to localStorage with key:', LAST_SUBURB_KEY);
     } catch (error) {
       console.error('Failed to save last suburb:', error);
     }
@@ -92,7 +94,9 @@ export const storage = {
 
   loadLastSuburb: (): string => {
     try {
-      return localStorage.getItem(LAST_SUBURB_KEY) || '';
+      const result = localStorage.getItem(LAST_SUBURB_KEY) || '';
+      console.log('🔍 storage.loadLastSuburb returning:', result);
+      return result;
     } catch (error) {
       console.error('Failed to load last suburb:', error);
       return '';

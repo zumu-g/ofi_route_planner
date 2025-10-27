@@ -26,10 +26,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [lastSuburb, setLastSuburb] = useState<string>('');
 
   useEffect(() => {
+    console.log('🔍 LocationForm useEffect - editLocation:', editLocation);
     if (!editLocation) {
       const savedSuburb = storage.loadLastSuburb();
+      console.log('🔍 Loaded suburb from storage:', savedSuburb);
       if (savedSuburb) {
         setLastSuburb(savedSuburb);
+        console.log('🔍 Set lastSuburb state to:', savedSuburb);
       }
     }
   }, [editLocation]);
@@ -73,11 +76,14 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     
     // Extract and save the suburb/city for future prepopulation
     const addressParts = location.address.split(',');
+    console.log('🔍 Address parts:', addressParts);
     if (addressParts.length >= 2) {
       // Get the suburb/city part (usually after the first comma)
       const suburb = addressParts.slice(1).join(',').trim();
+      console.log('🔍 Extracted suburb:', suburb);
       if (suburb) {
         storage.saveLastSuburb(suburb);
+        console.log('🔍 Saved suburb to storage:', suburb);
       }
     }
     
@@ -127,6 +133,22 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
           </label>
+          
+          {/* DEBUG INFO */}
+          <div style={{ 
+            background: '#ffeb3b', 
+            padding: '8px', 
+            marginBottom: '8px', 
+            fontSize: '12px',
+            border: '2px solid #f57c00',
+            borderRadius: '4px'
+          }}>
+            <strong>🐛 DEBUG:</strong><br/>
+            lastSuburb state: "{lastSuburb}"<br/>
+            lastSuburb length: {lastSuburb.length}<br/>
+            Button should show: {lastSuburb ? 'YES' : 'NO'}
+          </div>
+          
           <input
             type="text"
             placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "123 Main St, City"}
@@ -135,6 +157,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             required
           />
           {lastSuburb && (
+            console.log('🔍 Rendering auto-population button with lastSuburb:', lastSuburb),
             <div style={{
               fontSize: '13px',
               marginTop: '6px'
