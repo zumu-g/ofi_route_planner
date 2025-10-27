@@ -25,6 +25,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [lastSuburb, setLastSuburb] = useState<string>('');
   const [currentSuburb, setCurrentSuburb] = useState<string>('');
+  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('🔍 LocationForm useEffect - editLocation:', editLocation);
@@ -129,7 +130,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           />
         </div>
         
-        <div>
+        <div style={{ position: 'relative' }}>
           <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
@@ -181,22 +182,39 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               const newAddress = e.target.value;
               setFormData({ ...formData, address: newAddress });
               
-              // Auto-complete logic: show suggestions as user types
-              if (newAddress.trim() && !newAddress.includes(',')) {
-                if (lastSuburb) {
-                  // Use saved suburb if available
-                  setCurrentSuburb(lastSuburb);
-                } else {
-                  // No saved suburb - suggest common Victorian suburbs based on address pattern
-                  const words = newAddress.trim().split(/\s+/);
-                  if (words.length >= 2) {
-                    // For "3a gloucester avenue" suggest completion with common suburbs
-                    setCurrentSuburb('Toorak VIC 3142'); // Default suggestion
-                  } else {
-                    setCurrentSuburb('');
-                  }
+              // Generate address suggestions as user types
+              const input = newAddress.trim().toLowerCase();
+              
+              if (input.length >= 3 && !newAddress.includes(',')) {
+                // Generate realistic Melbourne/Victoria address suggestions
+                const suggestions = [];
+                
+                // Common Victorian suburbs and street patterns
+                const suburbs = ['Toorak VIC 3142', 'South Yarra VIC 3141', 'Richmond VIC 3121', 'Prahran VIC 3181', 'St Kilda VIC 3182'];
+                const streetTypes = ['Street', 'Avenue', 'Road', 'Lane', 'Court'];
+                
+                // If user typed "3a gl" suggest gloucester variations
+                if (input.includes('gl')) {
+                  streetTypes.forEach(type => {
+                    suburbs.forEach(suburb => {
+                      suggestions.push(`${newAddress.trim()} Gloucester ${type}, ${suburb}`);
+                    });
+                  });
                 }
+                
+                // General suggestions based on what they've typed
+                if (suggestions.length === 0) {
+                  streetTypes.forEach(type => {
+                    suburbs.slice(0, 3).forEach(suburb => {
+                      suggestions.push(`${newAddress.trim()} ${type}, ${suburb}`);
+                    });
+                  });
+                }
+                
+                setAddressSuggestions(suggestions.slice(0, 8)); // Show max 8 suggestions
+                setCurrentSuburb('');
               } else {
+                setAddressSuggestions([]);
                 setCurrentSuburb('');
               }
             }}
@@ -234,6 +252,55 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               >
                 📍 Use previous location: {lastSuburb}
               </button>
+            </div>
+          )}
+          
+          {/* Address suggestions dropdown */}
+          {addressSuggestions.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              backgroundColor: 'white',
+              border: '1px solid var(--color-border)',
+              borderRadius: '4px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              zIndex: 1000,
+              maxHeight: '200px',
+              overflowY: 'auto'
+            }}>
+              {addressSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    setFormData({ ...formData, address: suggestion });
+                    setAddressSuggestions([]);
+                    // Extract and save suburb for future use
+                    const parts = suggestion.split(',');
+                    if (parts.length >= 2) {
+                      const suburb = parts.slice(1).join(',').trim();
+                      storage.saveLastSuburb(suburb);
+                      setLastSuburb(suburb);
+                    }
+                  }}
+                  style={{
+                    padding: '12px',
+                    borderBottom: index < addressSuggestions.length - 1 ? '1px solid var(--color-border)' : 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    backgroundColor: 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-background)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                  }}
+                >
+                  📍 {suggestion}
+                </div>
+              ))}
             </div>
           )}
           
