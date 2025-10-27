@@ -189,23 +189,47 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                 // Generate realistic Melbourne/Victoria address suggestions
                 const suggestions: string[] = [];
                 
-                // Common Victorian suburbs and street patterns
-                const suburbs = ['Toorak VIC 3142', 'South Yarra VIC 3141', 'Richmond VIC 3121', 'Prahran VIC 3181', 'St Kilda VIC 3182'];
-                const streetTypes = ['Street', 'Avenue', 'Road', 'Lane', 'Court'];
+                // Real Victorian suburbs with postcodes
+                const melbourneSuburbs = [
+                  'Toorak VIC 3142', 'South Yarra VIC 3141', 'Richmond VIC 3121', 
+                  'Prahran VIC 3181', 'St Kilda VIC 3182', 'Brighton VIC 3186',
+                  'Hawthorn VIC 3122', 'Camberwell VIC 3124', 'Malvern VIC 3144',
+                  'Caulfield VIC 3162', 'Glen Iris VIC 3146', 'Armadale VIC 3143'
+                ];
                 
-                // If user typed "3a gl" suggest gloucester variations
-                if (input.includes('gl')) {
-                  streetTypes.forEach(type => {
-                    suburbs.forEach(suburb => {
-                      suggestions.push(`${newAddress.trim()} Gloucester ${type}, ${suburb}`);
-                    });
-                  });
+                // Real street name patterns and completions
+                const streetCompletions = {
+                  'gl': ['Gloucester Street', 'Glen Street', 'Glenferrie Road', 'Glenhuntly Road'],
+                  'br': ['Brunswick Street', 'Bridge Road', 'Brighton Road', 'Burke Road'],
+                  'ch': ['Chapel Street', 'Church Street', 'Churchill Avenue', 'Charles Street'],
+                  'co': ['Collins Street', 'Commercial Road', 'Coorong Road', 'Cotham Road'],
+                  'ha': ['High Street', 'Hawthorn Road', 'Hampton Street', 'Harris Street'],
+                  'ma': ['Main Street', 'Malvern Road', 'Manchester Street', 'Marine Parade'],
+                  'st': ['St Kilda Road', 'Station Street', 'Sturt Street', 'Stanley Street'],
+                  'sw': ['Swan Street', 'Swanston Street', 'Sweet Street', 'Sydney Road']
+                };
+                
+                // Find matching street names based on input
+                let matchingStreets: string[] = [];
+                for (const [prefix, streets] of Object.entries(streetCompletions)) {
+                  if (input.includes(prefix)) {
+                    matchingStreets = streets;
+                    break;
+                  }
                 }
                 
-                // General suggestions based on what they've typed
-                if (suggestions.length === 0) {
-                  streetTypes.forEach(type => {
-                    suburbs.slice(0, 3).forEach(suburb => {
+                // If specific street matches found, use them
+                if (matchingStreets.length > 0) {
+                  matchingStreets.forEach(street => {
+                    melbourneSuburbs.slice(0, 4).forEach(suburb => {
+                      suggestions.push(`${newAddress.split(' ')[0]} ${street}, ${suburb}`);
+                    });
+                  });
+                } else {
+                  // General suggestions with common street types
+                  const commonStreets = ['Street', 'Avenue', 'Road', 'Grove', 'Court'];
+                  commonStreets.forEach(type => {
+                    melbourneSuburbs.slice(0, 3).forEach(suburb => {
                       suggestions.push(`${newAddress.trim()} ${type}, ${suburb}`);
                     });
                   });
