@@ -149,7 +149,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             currentSuburb: "{currentSuburb}"<br/>
             address: "{formData.address || ''}"<br/>
             word count: {formData.address ? formData.address.trim().split(/\s+/).length : 0}<br/>
-            Live button should show: {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 3 ? 'YES' : 'NO'}<br/>
+            Live button should show: {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') ? 'YES' : 'NO'}<br/>
             <button 
               type="button" 
               onClick={() => {
@@ -181,29 +181,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               const newAddress = e.target.value;
               setFormData({ ...formData, address: newAddress });
               
-              // Extract suburb from current input for live auto-population
-              let extractedSuburb = '';
-              
-              // Method 1: Comma separated (e.g., "123 Smith St, Toorak, VIC")
-              const commaParts = newAddress.split(',');
-              if (commaParts.length >= 2) {
-                extractedSuburb = commaParts.slice(1).join(',').trim();
+              // Set currentSuburb to trigger auto-complete immediately
+              // if we have a saved suburb and the user is typing
+              if (lastSuburb && newAddress.trim() && !newAddress.includes(',')) {
+                setCurrentSuburb(lastSuburb);
               } else {
-                // Method 2: Australian format without commas (e.g., "25 ashburn gve")
-                const words = newAddress.trim().split(/\s+/);
-                if (words.length >= 3) {
-                  // Look for pattern: number + street name + suburb...
-                  // For "25 ashburn gve" -> suburb would be "gve" 
-                  // But better to take last 1-2 words as potential suburb
-                  const potentialSuburb = words.slice(2).join(' ');
-                  // Check if it looks like a suburb (contains letters)
-                  if (potentialSuburb && /[a-zA-Z]/.test(potentialSuburb)) {
-                    extractedSuburb = potentialSuburb;
-                  }
-                }
+                setCurrentSuburb('');
               }
-              
-              setCurrentSuburb(extractedSuburb);
             }}
             required
           />
@@ -242,8 +226,8 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             </div>
           )}
           
-          {/* Live auto-population based on current typing */}
-          {currentSuburb && formData.address && formData.address.trim().split(/\s+/).length >= 3 && (
+          {/* Live auto-population - show as soon as user types */}
+          {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px',
@@ -253,26 +237,26 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               border: '1px solid rgba(34, 197, 94, 0.2)'
             }}>
               <div style={{ color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
-                🏠 Detected suburb: <strong>{currentSuburb}</strong>
+                💡 Complete address: <strong>{formData.address}, {currentSuburb}</strong>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  // Use the detected suburb for the next location
-                  storage.saveLastSuburb(currentSuburb);
-                  setLastSuburb(currentSuburb);
+                  // Complete the address with the saved suburb
+                  setFormData({ ...formData, address: `${formData.address}, ${currentSuburb}` });
+                  setCurrentSuburb('');
                 }}
                 style={{
                   fontSize: '11px',
                   padding: '3px 8px',
-                  background: 'var(--color-success)',
+                  background: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '3px',
                   cursor: 'pointer'
                 }}
               >
-                💾 Save for next location
+                ✅ Use this address
               </button>
             </div>
           )}
