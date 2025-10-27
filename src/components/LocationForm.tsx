@@ -12,9 +12,6 @@ interface LocationFormProps {
 }
 
 export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, editLocation }) => {
-  // Log immediately on render
-  console.log('[V4-RENDER] LocationForm rendering. EditLocation:', editLocation);
-  
   const [formData, setFormData] = useState<Partial<Location>>({
     address: '',
     name: '',
@@ -26,38 +23,16 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   });
 
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [addressSuggestion, setAddressSuggestion] = useState<string>('');
+  const [lastSuburb, setLastSuburb] = useState<string>('');
 
   useEffect(() => {
-    console.log('[V4-EFFECT] useEffect running. EditLocation:', editLocation);
-    
     if (!editLocation) {
-      console.log('[V4-EFFECT] No edit location, loading prepopulation...');
-      
-      // Direct localStorage check
-      const directCheck = localStorage.getItem('ofi-route-planner-last-location-v4');
-      console.log('[V4-DIRECT] Direct localStorage check:', directCheck);
-      
-      const lastLocation = storage.loadLastLocation();
-      console.log('[V4-EFFECT] Got from storage.loadLastLocation():', lastLocation);
-      
-      // Super simple - just use whatever we have
-      if (lastLocation && lastLocation.suburb) {
-        console.log('[V4-EFFECT] Setting suggestion to:', lastLocation.suburb);
-        setAddressSuggestion(lastLocation.suburb);
-        console.log('[V4-EFFECT] addressSuggestion state should now be:', lastLocation.suburb);
-      } else {
-        console.log('[V4-EFFECT] No suggestion available, clearing');
-        setAddressSuggestion('');
+      const savedSuburb = storage.loadLastSuburb();
+      if (savedSuburb) {
+        setLastSuburb(savedSuburb);
       }
-    } else {
-      console.log('[V4-EFFECT] Edit mode, clearing suggestion');
-      setAddressSuggestion('');
     }
   }, [editLocation]);
-  
-  // Log the current state
-  console.log('[V4-STATE] Current addressSuggestion:', addressSuggestion);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,16 +43,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     
     let coordinates = formData.coordinates;
     if (!coordinates) {
-      console.log('Geocoding address:', formData.address);
       const geocodeResult = await geocodeAddress(formData.address);
       if (geocodeResult) {
         coordinates = {
           lat: geocodeResult.lat,
           lng: geocodeResult.lng,
         };
-        console.log('Geocoding successful:', coordinates);
       } else {
-        console.error('Geocoding failed for address:', formData.address);
         alert('Could not find coordinates for this address. Please check the address and try again.');
         setIsGeocoding(false);
         return;
@@ -99,9 +71,15 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
       endTime: formData.endTime,
     };
     
-    // Save the address details for future prepopulation
-    console.log('[V4] SAVING ADDRESS:', location.address);
-    storage.saveLastLocation(location.address);
+    // Extract and save the suburb/city for future prepopulation
+    const addressParts = location.address.split(',');
+    if (addressParts.length >= 2) {
+      // Get the suburb/city part (usually after the first comma)
+      const suburb = addressParts.slice(1).join(',').trim();
+      if (suburb) {
+        storage.saveLastSuburb(suburb);
+      }
+    }
     
     onAdd(location);
   };
@@ -144,93 +122,50 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           />
         </div>
         
-        {/* DEBUG: Show suggestion state clearly */}
-        <div style={{ 
-          background: 'yellow', 
-          padding: '10px', 
-          margin: '10px 0',
-          border: '2px solid red',
-          fontWeight: 'bold'
-        }}>
-          DEBUG: addressSuggestion = "{addressSuggestion}"
-        </div>
-        
         <div>
           <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
-            {addressSuggestion && !formData.address && (
+          </label>
+          <input
+            type="text"
+            placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "123 Main St, City"}
+            value={formData.address || ''}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            required
+          />
+          {lastSuburb && (
+            <div style={{
+              fontSize: '13px',
+              marginTop: '6px'
+            }}>
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, address: addressSuggestion })}
+                onClick={() => {
+                  // Pre-fill with a template using the last suburb
+                  setFormData({ ...formData, address: `, ${lastSuburb}` });
+                  // Focus the input so user can type the street address
+                  setTimeout(() => {
+                    const inputs = document.querySelectorAll('input[type="text"]') as NodeListOf<HTMLInputElement>;
+                    const addressInput = inputs[1]; // Second input is the address field
+                    if (addressInput) {
+                      addressInput.focus();
+                      addressInput.setSelectionRange(0, 0);
+                    }
+                  }, 0);
+                }}
                 style={{
-                  marginLeft: '8px',
                   fontSize: '12px',
                   padding: '4px 12px',
                   background: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
+                  cursor: 'pointer'
                 }}
               >
-                Use: {addressSuggestion}
+                📍 Use previous location: {lastSuburb}
               </button>
-            )}
-          </label>
-          <input
-            type="text"
-            placeholder={addressSuggestion ? `e.g., 123 Main St, ${addressSuggestion}` : "123 Main St, City"}
-            value={formData.address || ''}
-            onChange={(e) => {
-              const newAddress = e.target.value;
-              setFormData({ ...formData, address: newAddress });
-              
-              // Auto-append suggestion if user types a street number/name
-              if (addressSuggestion && newAddress && !newAddress.includes(',')) {
-                const words = newAddress.trim().split(' ');
-                const hasNumber = /^\d+/.test(words[0] || '');
-                const hasStreetName = words.length >= 2 && words[1].length >= 2;
-                const lastWord = words[words.length - 1]?.toLowerCase() || '';
-                
-                // Common street types that indicate the address is complete
-                const streetTypes = ['st', 'street', 'rd', 'road', 'ave', 'avenue', 'dr', 'drive', 'ct', 'court', 'pl', 'place', 'way', 'lane', 'ln', 'blvd', 'boulevard', 'cres', 'crescent', 'tce', 'terrace', 'pde', 'parade'];
-                
-                // Check if the last word is a street type or if user added extra space
-                if (hasNumber && hasStreetName && (streetTypes.includes(lastWord) || newAddress.endsWith('  ') || newAddress.endsWith(', '))) {
-                  setFormData({ ...formData, address: `${newAddress.trim()}, ${addressSuggestion}` });
-                }
-              }
-            }}
-            onKeyDown={(e) => {
-              // Auto-complete with Tab key
-              if (e.key === 'Tab' && addressSuggestion && formData.address && !formData.address.includes(',')) {
-                const hasNumber = /^\d+\s/.test(formData.address);
-                const hasStreetName = formData.address.trim().split(' ').length >= 2;
-                if (hasNumber && hasStreetName) {
-                  e.preventDefault();
-                  setFormData({ ...formData, address: `${formData.address.trim()}, ${addressSuggestion}` });
-                }
-              }
-            }}
-            required
-          />
-          {addressSuggestion && (
-            <div style={{
-              fontSize: '13px',
-              color: 'var(--color-primary)',
-              marginTop: '6px',
-              padding: '8px',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderRadius: '4px',
-              border: '1px solid rgba(59, 130, 246, 0.2)'
-            }}>
-              {formData.address && !formData.address.includes(',') && /^\d+\s/.test(formData.address) ? (
-                <>📍 Press Tab to complete: {formData.address.trim()}, {addressSuggestion}</>
-              ) : (
-                <>📍 Last location: <strong>{addressSuggestion}</strong> - Click button above to use</>
-              )}
             </div>
           )}
         </div>

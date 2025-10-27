@@ -2,7 +2,7 @@ import type { Location } from '../types';
 
 const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';
-const LAST_LOCATION_KEY = 'ofi-route-planner-last-location-v4'; // Changed key to force fresh start
+const LAST_SUBURB_KEY = 'ofi-route-planner-last-suburb';
 const SAVED_ROUTES_KEY = 'ofi-route-planner-saved-routes';
 
 interface StorageData {
@@ -17,12 +17,6 @@ interface Settings {
   defaultCountryCode?: string; // ISO country code for geocoding
 }
 
-interface LastLocationData {
-  suburb?: string;
-  city?: string;
-  state?: string;
-  postcode?: string;
-}
 
 interface SavedRoute {
   id: string;
@@ -88,47 +82,20 @@ export const storage = {
     }
   },
 
-  saveLastLocation: (address: string): void => {
-    // SUPER SIMPLE V4 - Just save the whole address
-    console.log('[V4] Saving address:', address);
-    
-    // Just save it directly - no parsing
-    const data = { fullAddress: address };
-    const json = JSON.stringify(data);
-    
-    console.log('[V4] Saving to localStorage:', json);
-    localStorage.setItem(LAST_LOCATION_KEY, json);
-    
-    // Verify immediately
-    const check = localStorage.getItem(LAST_LOCATION_KEY);
-    console.log('[V4] Verified in storage:', check);
+  saveLastSuburb: (suburb: string): void => {
+    try {
+      localStorage.setItem(LAST_SUBURB_KEY, suburb);
+    } catch (error) {
+      console.error('Failed to save last suburb:', error);
+    }
   },
 
-  loadLastLocation: (): LastLocationData => {
-    console.log('[V4] Loading last location');
-    const data = localStorage.getItem(LAST_LOCATION_KEY);
-    console.log('[V4] Raw from storage:', data);
-    
-    if (!data) {
-      console.log('[V4] No data found');
-      return {};
-    }
-    
+  loadLastSuburb: (): string => {
     try {
-      const parsed = JSON.parse(data);
-      console.log('[V4] Parsed:', parsed);
-      
-      // Handle new format
-      if (parsed.fullAddress) {
-        console.log('[V4] Using fullAddress:', parsed.fullAddress);
-        return { suburb: parsed.fullAddress };
-      }
-      
-      // Fallback for any old format
-      return parsed;
+      return localStorage.getItem(LAST_SUBURB_KEY) || '';
     } catch (error) {
-      console.error('[V4] Parse error:', error);
-      return {};
+      console.error('Failed to load last suburb:', error);
+      return '';
     }
   },
 
