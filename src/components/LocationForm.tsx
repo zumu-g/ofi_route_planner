@@ -146,7 +146,29 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             <strong>🐛 DEBUG:</strong><br/>
             lastSuburb state: "{lastSuburb}"<br/>
             lastSuburb length: {lastSuburb.length}<br/>
-            Button should show: {lastSuburb ? 'YES' : 'NO'}
+            Button should show: {lastSuburb ? 'YES' : 'NO'}<br/>
+            localStorage direct: "{localStorage.getItem('ofi-route-planner-last-suburb') || 'null'}"<br/>
+            <button 
+              type="button" 
+              onClick={() => {
+                storage.saveLastSuburb('Test Suburb, VIC 3000');
+                setLastSuburb('Test Suburb, VIC 3000');
+              }}
+              style={{ fontSize: '10px', padding: '2px 6px', marginTop: '4px' }}
+            >
+              Set Test Suburb
+            </button>
+            <button 
+              type="button" 
+              onClick={() => {
+                const loaded = storage.loadLastSuburb();
+                setLastSuburb(loaded);
+                alert('Loaded: ' + loaded);
+              }}
+              style={{ fontSize: '10px', padding: '2px 6px', marginTop: '4px', marginLeft: '4px' }}
+            >
+              Reload Suburb
+            </button>
           </div>
           
           <input
