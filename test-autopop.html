@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-population Test</title>
+</head>
+<body>
+    <h1>Auto-population Test</h1>
+    
+    <h2>Current Storage</h2>
+    <pre id="storage"></pre>
+    
+    <h2>Test Suburb Saving</h2>
+    <button onclick="testSave()">Save Test Suburb: "Toorak, VIC 3142"</button>
+    <button onclick="testLoad()">Load Suburb</button>
+    <button onclick="testClear()">Clear Suburb</button>
+    
+    <script>
+        function showStorage() {
+            const suburb = localStorage.getItem('ofi-route-planner-last-suburb');
+            document.getElementById('storage').textContent = JSON.stringify({
+                'ofi-route-planner-last-suburb': suburb
+            }, null, 2);
+        }
+        
+        function testSave() {
+            localStorage.setItem('ofi-route-planner-last-suburb', 'Toorak, VIC 3142');
+            showStorage();
+            alert('Saved: "Toorak, VIC 3142"');
+        }
+        
+        function testLoad() {
+            const suburb = localStorage.getItem('ofi-route-planner-last-suburb');
+            alert('Loaded: ' + (suburb || 'null'));
+        }
+        
+        function testClear() {
+            localStorage.removeItem('ofi-route-planner-last-suburb');
+            showStorage();
+            alert('Cleared suburb data');
+        }
+        
+        // Show initial state
+        showStorage();
+    </script>
+</body>
+</html>
