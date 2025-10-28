@@ -6,23 +6,20 @@ import {
   Download,
   Navigation,
   Calendar,
-  Settings,
-  FolderOpen
+  Settings
 } from 'lucide-react';
-import type { Location, RouteSegment } from './types';
+import { Location, RouteSegment } from './types';
 import { LocationForm } from './components/LocationForm';
 import { LocationCard } from './components/LocationCard';
 import { RouteMap } from './components/RouteMap';
 import { RouteTimeline } from './components/RouteTimeline';
 import { ExportModal } from './components/ExportModal';
-import { SavedRoutesModal } from './components/SavedRoutesModal';
 import { 
   generateRouteSegments, 
   optimizeRoute, 
   calculateTotalDistance, 
   calculateTotalDuration 
 } from './utils/route';
-import { storage } from './utils/storage';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -32,8 +29,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
@@ -45,7 +42,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortableLocationCard({ location, onEdit, onDelete, arrivalTime, departureTime, travelTime, travelDistance, isFirst, isLast }: any) {
+function SortableLocationCard({ location, onEdit, onDelete }: any) {
   const {
     attributes,
     listeners,
@@ -61,29 +58,19 @@ function SortableLocationCard({ location, onEdit, onDelete, arrivalTime, departu
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <LocationCard
         location={location}
         onEdit={onEdit}
         onDelete={onDelete}
         isDragging={isDragging}
-        arrivalTime={arrivalTime}
-        departureTime={departureTime}
-        travelTime={travelTime}
-        travelDistance={travelDistance}
-        isFirst={isFirst}
-        isLast={isLast}
-        dragHandleProps={listeners}
       />
     </div>
   );
 }
 
 function App() {
-  const [locations, setLocations] = useState<Location[]>(() => {
-    // Load saved locations on initial render
-    return storage.loadLocations();
-  });
+  const [locations, setLocations] = useState<Location[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [routeDate, setRouteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -91,17 +78,7 @@ function App() {
   const [segments, setSegments] = useState<RouteSegment[]>([]);
   const [view, setView] = useState<'list' | 'map' | 'timeline'>('list');
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showSavedRoutesModal, setShowSavedRoutesModal] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [useGoogleMapsDistances, setUseGoogleMapsDistances] = useState(() => {
-    const settings = storage.loadSettings();
-    return settings.useGoogleMapsDistances;
-  });
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState(() => {
-    const settings = storage.loadSettings();
-    return settings.googleMapsApiKey || '';
-  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -109,16 +86,6 @@ function App() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  // Save locations whenever they change
-  useEffect(() => {
-    storage.saveLocations(locations);
-  }, [locations]);
-
-  // Save settings whenever they change
-  useEffect(() => {
-    storage.saveSettings({ useGoogleMapsDistances, googleMapsApiKey });
-  }, [useGoogleMapsDistances, googleMapsApiKey]);
 
   useEffect(() => {
     if (locations.length > 1) {
@@ -163,15 +130,9 @@ function App() {
     if (locations.length < 2) return;
     
     setIsOptimizing(true);
-    const optimizedLocations = await optimizeRoute(locations);
+    const optimizedLocations = await optimizeRoute(locations, startTime);
     setLocations(optimizedLocations);
     setIsOptimizing(false);
-  };
-
-  const handleLoadRoute = (loadedLocations: Location[], loadedRouteDate?: string, loadedStartTime?: string) => {
-    setLocations(loadedLocations);
-    if (loadedRouteDate) setRouteDate(loadedRouteDate);
-    if (loadedStartTime) setStartTime(loadedStartTime);
   };
 
   const totalDistance = calculateTotalDistance(segments);
@@ -192,14 +153,11 @@ function App() {
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-            <img src="/logo.svg" alt="OFI Route Planner" style={{ width: 40, height: 40 }} />
-            <div>
-              <h1 style={{ margin: 0, fontSize: '24px' }}>OFI Route Planner</h1>
-              <p className="text-secondary" style={{ margin: '4px 0 0', fontSize: '14px' }}>
-                Optimize your property viewings
-              </p>
-            </div>
+          <div>
+            <h1 style={{ margin: 0 }}>OFI Route Planner</h1>
+            <p className="text-secondary" style={{ margin: '4px 0 0' }}>
+              Plan your open home visits efficiently
+            </p>
           </div>
           
           <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
@@ -245,92 +203,6 @@ function App() {
         margin: '0 auto',
         width: '100%',
       }}>
-        {/* Settings Panel */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div
-              className="card fade-in"
-              style={{ marginBottom: 'var(--spacing-lg)' }}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Settings</h3>
-              <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                  <input
-                    type="checkbox"
-                    checked={useGoogleMapsDistances}
-                    onChange={(e) => setUseGoogleMapsDistances(e.target.checked)}
-                  />
-                  Use Google Maps for distance calculations
-                </label>
-              </div>
-              <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                <label style={{ 
-                  display: 'block', 
-                  marginBottom: 'var(--spacing-xs)', 
-                  color: 'var(--color-text-secondary)', 
-                  fontSize: '14px' 
-                }}>
-                  Country for Address Search
-                </label>
-                <select
-                  value={localStorage.getItem('ofi-route-planner-settings') ? JSON.parse(localStorage.getItem('ofi-route-planner-settings') || '{}').defaultCountryCode || 'au' : 'au'}
-                  onChange={(e) => {
-                    const settings = JSON.parse(localStorage.getItem('ofi-route-planner-settings') || '{}');
-                    settings.defaultCountryCode = e.target.value;
-                    localStorage.setItem('ofi-route-planner-settings', JSON.stringify(settings));
-                    window.location.reload(); // Reload to apply new settings
-                  }}
-                  style={{ width: '200px' }}
-                >
-                  <option value="au">Australia</option>
-                  <option value="nz">New Zealand</option>
-                  <option value="us">United States</option>
-                  <option value="uk">United Kingdom</option>
-                  <option value="ca">Canada</option>
-                </select>
-                <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
-                  Addresses will be searched within this country
-                </div>
-              </div>
-              {useGoogleMapsDistances && (
-                <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: 'var(--spacing-xs)', 
-                    color: 'var(--color-text-secondary)', 
-                    fontSize: '14px' 
-                  }}>
-                    Google Maps API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={googleMapsApiKey}
-                    onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-                    placeholder="Enter your Google Maps API key"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-                <button
-                  className="btn-secondary"
-                  onClick={() => {
-                    if (confirm('Are you sure you want to clear all locations?')) {
-                      setLocations([]);
-                      storage.clearLocations();
-                    }
-                  }}
-                >
-                  Clear All Locations
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Route settings */}
         <div className="card fade-in" style={{ marginBottom: 'var(--spacing-lg)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -380,27 +252,12 @@ function App() {
             
             <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
               <button
-                className="btn-ghost"
-                onClick={() => setShowSettings(!showSettings)}
-                title="Settings"
-              >
-                <Settings size={18} />
-              </button>
-              <button
                 className="btn-secondary"
                 onClick={handleOptimizeRoute}
                 disabled={locations.length < 2 || isOptimizing}
               >
                 <Navigation size={18} />
                 {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
-              </button>
-              
-              <button
-                className="btn-secondary"
-                onClick={() => setShowSavedRoutesModal(true)}
-              >
-                <FolderOpen size={18} />
-                Saved Routes
               </button>
               
               <button
@@ -471,49 +328,14 @@ function App() {
                     strategy={verticalListSortingStrategy}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                      {locations.map((location, index) => {
-                        // Calculate arrival and departure times
-                        let arrivalTime: string | undefined;
-                        let departureTime: string | undefined;
-                        let travelTime: number | undefined;
-                        let travelDistance: number | undefined;
-
-                        if (index === 0) {
-                          // First location - arrival time is start time
-                          arrivalTime = startTime;
-                        } else if (segments.length > 0 && index <= segments.length) {
-                          // Get travel info from previous location
-                          const prevSegment = segments[index - 1];
-                          if (prevSegment) {
-                            arrivalTime = prevSegment.arrivalTime;
-                            travelTime = prevSegment.duration;
-                            travelDistance = prevSegment.distance;
-                          }
-                        }
-
-                        // Calculate departure time for non-last locations
-                        if (index < locations.length - 1 && segments.length > 0 && index < segments.length) {
-                          const segment = segments[index];
-                          if (segment) {
-                            departureTime = segment.departureTime;
-                          }
-                        }
-
-                        return (
-                          <SortableLocationCard
-                            key={location.id}
-                            location={location}
-                            onEdit={handleEditLocation}
-                            onDelete={handleDeleteLocation}
-                            arrivalTime={arrivalTime}
-                            departureTime={departureTime}
-                            travelTime={travelTime}
-                            travelDistance={travelDistance}
-                            isFirst={index === 0}
-                            isLast={index === locations.length - 1}
-                          />
-                        );
-                      })}
+                      {locations.map((location) => (
+                        <SortableLocationCard
+                          key={location.id}
+                          location={location}
+                          onEdit={handleEditLocation}
+                          onDelete={handleDeleteLocation}
+                        />
+                      ))}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -565,15 +387,6 @@ function App() {
         segments={segments}
       />
 
-      {/* Saved Routes Modal */}
-      <SavedRoutesModal
-        isOpen={showSavedRoutesModal}
-        onClose={() => setShowSavedRoutesModal(false)}
-        currentLocations={locations}
-        onLoadRoute={handleLoadRoute}
-        routeDate={routeDate}
-        startTime={startTime}
-      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { Location, CalendarEvent, ExportOptions } from '../types';
+import { Location, CalendarEvent, ExportOptions } from '../types';
 import { format, parse } from 'date-fns';
 
 export function createCalendarEvent(location: Location, date: string, startTime: string): CalendarEvent {

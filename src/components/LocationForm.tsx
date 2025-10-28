@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Timer, Plus, X } from 'lucide-react';
-import type { Location } from '../types';
+import { Location } from '../types';
 import { geocodeAddress } from '../utils/geocoding';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { storage } from '../utils/storage';
 
 interface LocationFormProps {
@@ -26,6 +26,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [lastSuburb, setLastSuburb] = useState<string>('');
   const [currentSuburb, setCurrentSuburb] = useState<string>('');
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('🔍 LocationForm useEffect - editLocation:', editLocation);
@@ -45,8 +46,11 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     if (!formData.address) return;
     
     setIsGeocoding(true);
+    setGeocodeError(null);
     
     let coordinates = formData.coordinates;
+    let hadGeocodeError = false;
+    
     if (!coordinates) {
       const geocodeResult = await geocodeAddress(formData.address);
       if (geocodeResult) {
@@ -55,9 +59,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           lng: geocodeResult.lng,
         };
       } else {
-        alert('Could not find coordinates for this address. Please check the address and try again.');
-        setIsGeocoding(false);
-        return;
+        // Set error message if geocoding failed
+        hadGeocodeError = true;
+        setGeocodeError('Could not find coordinates for this address. The location will be added without map coordinates.');
       }
     }
     
@@ -90,6 +94,11 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     }
     
     onAdd(location);
+    
+    // Clear error after a short delay if it was set
+    if (hadGeocodeError) {
+      setTimeout(() => setGeocodeError(null), 5000);
+    }
   };
 
   return (
@@ -360,6 +369,21 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               >
                 ✅ Use this address
               </button>
+            </div>
+          )}
+          
+          {/* Geocode error display */}
+          {geocodeError && (
+            <div style={{ 
+              marginTop: 'var(--spacing-xs)', 
+              padding: 'var(--spacing-sm)', 
+              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-text-secondary)',
+              fontSize: '13px'
+            }}>
+              {geocodeError}
             </div>
           )}
         </div>

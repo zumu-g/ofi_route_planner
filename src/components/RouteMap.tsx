@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
-import type { Location } from '../types';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import { Location } from '../types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -16,27 +16,8 @@ interface RouteMapProps {
   locations: Location[];
 }
 
-// Component to handle map bounds updates
-function MapBoundsUpdater({ bounds }: { bounds: L.LatLngBoundsExpression | undefined }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (bounds && Array.isArray(bounds) && bounds.length > 1) {
-      const leafletBounds = L.latLngBounds(bounds);
-      map.fitBounds(leafletBounds, { padding: [50, 50] });
-    }
-  }, [bounds, map]);
-  
-  return null;
-}
-
 export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
   const validLocations = locations.filter(loc => loc.coordinates);
-  
-  console.log('Valid locations for map:', validLocations.map(loc => ({
-    address: loc.address,
-    coordinates: loc.coordinates
-  })));
   
   if (validLocations.length === 0) {
     return (
@@ -53,9 +34,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
   }
   
   const bounds = validLocations.map(loc => [loc.coordinates!.lat, loc.coordinates!.lng] as [number, number]);
-  const center = bounds[0] || [-33.8688, 151.2093]; // Default to Sydney, Australia
-  
-  console.log('Map center:', center, 'Bounds:', bounds);
+  const center = bounds[0] || [-41.2865, 174.7762]; // Default to Wellington, NZ
   
   const polylinePositions = validLocations.map(loc => [
     loc.coordinates!.lat,
@@ -68,15 +47,12 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
         center={center}
         zoom={13}
         style={{ height: '400px', width: '100%' }}
-        scrollWheelZoom={true}
-        key={validLocations.map(l => l.id).join('-')} // Force re-render when locations change
+        bounds={bounds.length > 1 ? bounds : undefined}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        
-        <MapBoundsUpdater bounds={bounds.length > 1 ? bounds : undefined} />
         
         {validLocations.map((location, index) => (
           <Marker 
@@ -98,7 +74,7 @@ export const RouteMap: React.FC<RouteMapProps> = ({ locations }) => {
         {polylinePositions.length > 1 && (
           <Polyline 
             positions={polylinePositions}
-            color="#1e40af"
+            color="#007AFF"
             weight={3}
             opacity={0.7}
           />

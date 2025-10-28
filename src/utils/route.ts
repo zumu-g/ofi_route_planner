@@ -1,4 +1,4 @@
-import type { Location, RouteSegment } from '../types';
+import { Location, Route, RouteSegment } from '../types';
 import { format, parse, addMinutes } from 'date-fns';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -15,15 +15,37 @@ export async function calculateDistance(from: Location, to: Location): Promise<{
       );
       const data = await response.json();
       
-      if (data.status === 'OK' && data.rows[0].elements[0].status === 'OK') {
+      // Handle API errors
+      if (data.status === 'REQUEST_DENIED') {
+        const errorMessage = data.error_message || 'Unknown error';
+        if (errorMessage.includes('API key') || errorMessage.includes('permission') || errorMessage.includes('expired')) {
+          console.warn('Google Maps API: Authentication failed. The API key may be invalid, expired, or missing required permissions. Please check your VITE_GOOGLE_MAPS_API_KEY in .env.local');
+        } else {
+          console.warn('Google Maps API: Request denied. Check your API key and enable Distance Matrix API.');
+        }
+        // Fall through to Haversine calculation
+      } else if (data.status === 'OVER_QUERY_LIMIT') {
+        console.warn('Google Maps API: Query limit exceeded. The app will use estimated distances.');
+        // Fall through to Haversine calculation
+      } else if (data.status === 'INVALID_REQUEST') {
+        console.warn('Google Maps API: Invalid request. Check your coordinates.');
+        // Fall through to Haversine calculation
+      } else if (data.status === 'ZERO_RESULTS') {
+        console.warn('Google Maps API: No route found between locations.');
+        // Fall through to Haversine calculation
+      } else if (data.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
         const element = data.rows[0].elements[0];
         return {
           distance: element.distance.value / 1000, // Convert to km
           duration: element.duration.value / 60, // Convert to minutes
         };
+      } else {
+        console.warn('Google Maps API: Unexpected response status:', data.status, data.error_message || '');
+        // Fall through to Haversine calculation
       }
     } catch (error) {
       console.error('Error fetching distance from Google Maps:', error);
+      // Fall through to Haversine calculation
     }
   }
 
@@ -44,7 +66,7 @@ export async function calculateDistance(from: Location, to: Location): Promise<{
   return { distance, duration };
 }
 
-export async function optimizeRoute(locations: Location[]): Promise<Location[]> {
+export async function optimizeRoute(locations: Location[], startTime: string): Promise<Location[]> {
   if (locations.length <= 2) return locations;
 
   // Simple nearest neighbor algorithm
