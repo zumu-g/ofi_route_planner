@@ -5,14 +5,16 @@ A modern, Apple-design inspired web application for planning efficient routes be
 ## Features
 
 - **Location Management**: Add open homes and appointments with customizable durations and buffer times
+- **Smart Address Prepopulation**: Automatically suggests suburbs from previous entries for faster input
 - **Drag & Drop Reordering**: Easily reorganize your route by dragging locations
 - **Route Optimization**: Automatically optimize your route for the shortest travel time
 - **Interactive Map**: View all locations on an interactive map with route visualization
-- **Timeline View**: See a detailed timeline of your planned route
+- **Timeline View**: See a detailed timeline with arrival times and travel durations
 - **Calendar Export**: Export your route to:
   - ICS files (compatible with most calendar apps)
   - Google Calendar
   - Apple Calendar
+- **Error Handling**: Graceful handling of geocoding failures with fallback options
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## Design
