@@ -25,17 +25,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [lastSuburb, setLastSuburb] = useState<string>('');
   const [currentSuburb, setCurrentSuburb] = useState<string>('');
-  const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 LocationForm useEffect - editLocation:', editLocation);
     if (!editLocation) {
       const savedSuburb = storage.loadLastSuburb();
-      console.log('🔍 Loaded suburb from storage:', savedSuburb);
       if (savedSuburb) {
         setLastSuburb(savedSuburb);
-        console.log('🔍 Set lastSuburb state to:', savedSuburb);
       }
     }
   }, [editLocation]);
@@ -82,14 +78,11 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     
     // Extract and save the suburb/city for future prepopulation
     const addressParts = location.address.split(',');
-    console.log('🔍 Address parts:', addressParts);
     if (addressParts.length >= 2) {
       // Get the suburb/city part (usually after the first comma)
       const suburb = addressParts.slice(1).join(',').trim();
-      console.log('🔍 Extracted suburb:', suburb);
       if (suburb) {
         storage.saveLastSuburb(suburb);
-        console.log('🔍 Saved suburb to storage:', suburb);
       }
     }
     
@@ -145,44 +138,6 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             Address
           </label>
           
-          {/* DEBUG INFO */}
-          <div style={{ 
-            background: '#ffeb3b', 
-            padding: '8px', 
-            marginBottom: '8px', 
-            fontSize: '12px',
-            border: '2px solid #f57c00',
-            borderRadius: '4px'
-          }}>
-            <strong>🐛 DEBUG:</strong><br/>
-            lastSuburb state: "{lastSuburb}"<br/>
-            currentSuburb: "{currentSuburb}"<br/>
-            address: "{formData.address || ''}"<br/>
-            word count: {formData.address ? formData.address.trim().split(/\s+/).length : 0}<br/>
-            Live button should show: {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') ? 'YES' : 'NO'}<br/>
-            <button 
-              type="button" 
-              onClick={() => {
-                storage.saveLastSuburb('Test Suburb, VIC 3000');
-                setLastSuburb('Test Suburb, VIC 3000');
-              }}
-              style={{ fontSize: '10px', padding: '2px 6px', marginTop: '4px' }}
-            >
-              Set Test Suburb
-            </button>
-            <button 
-              type="button" 
-              onClick={() => {
-                const loaded = storage.loadLastSuburb();
-                setLastSuburb(loaded);
-                alert('Loaded: ' + loaded);
-              }}
-              style={{ fontSize: '10px', padding: '2px 6px', marginTop: '4px', marginLeft: '4px' }}
-            >
-              Reload Suburb
-            </button>
-          </div>
-          
           <input
             type="text"
             placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "123 Main St, City"}
@@ -191,63 +146,19 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
               const newAddress = e.target.value;
               setFormData({ ...formData, address: newAddress });
               
-              // Generate address suggestions as user types
-              const input = newAddress.trim().toLowerCase();
-              
-              if (input.length >= 3 && !newAddress.includes(',')) {
-                // Generate realistic Melbourne/Victoria address suggestions
-                const suggestions: string[] = [];
+              // Only suggest if we have a saved suburb and user has typed something
+              if (lastSuburb && newAddress.trim().length >= 2 && !newAddress.includes(',')) {
+                // Check if user has typed enough for a street address
+                const words = newAddress.trim().split(' ');
+                const hasNumber = /^\d+/.test(words[0] || '');
+                const hasStreetName = words.length >= 2;
                 
-                // Real Victorian suburbs with postcodes
-                const melbourneSuburbs = [
-                  'Toorak VIC 3142', 'South Yarra VIC 3141', 'Richmond VIC 3121', 
-                  'Prahran VIC 3181', 'St Kilda VIC 3182', 'Brighton VIC 3186',
-                  'Hawthorn VIC 3122', 'Camberwell VIC 3124', 'Malvern VIC 3144',
-                  'Caulfield VIC 3162', 'Glen Iris VIC 3146', 'Armadale VIC 3143'
-                ];
-                
-                // Real street name patterns and completions
-                const streetCompletions = {
-                  'gl': ['Gloucester Street', 'Glen Street', 'Glenferrie Road', 'Glenhuntly Road'],
-                  'br': ['Brunswick Street', 'Bridge Road', 'Brighton Road', 'Burke Road'],
-                  'ch': ['Chapel Street', 'Church Street', 'Churchill Avenue', 'Charles Street'],
-                  'co': ['Collins Street', 'Commercial Road', 'Coorong Road', 'Cotham Road'],
-                  'ha': ['High Street', 'Hawthorn Road', 'Hampton Street', 'Harris Street'],
-                  'ma': ['Main Street', 'Malvern Road', 'Manchester Street', 'Marine Parade'],
-                  'st': ['St Kilda Road', 'Station Street', 'Sturt Street', 'Stanley Street'],
-                  'sw': ['Swan Street', 'Swanston Street', 'Sweet Street', 'Sydney Road']
-                };
-                
-                // Find matching street names based on input
-                let matchingStreets: string[] = [];
-                for (const [prefix, streets] of Object.entries(streetCompletions)) {
-                  if (input.includes(prefix)) {
-                    matchingStreets = streets;
-                    break;
-                  }
-                }
-                
-                // If specific street matches found, use them
-                if (matchingStreets.length > 0) {
-                  matchingStreets.forEach(street => {
-                    melbourneSuburbs.slice(0, 4).forEach(suburb => {
-                      suggestions.push(`${newAddress.split(' ')[0]} ${street}, ${suburb}`);
-                    });
-                  });
+                if (hasNumber && hasStreetName) {
+                  setCurrentSuburb(lastSuburb);
                 } else {
-                  // General suggestions with common street types
-                  const commonStreets = ['Street', 'Avenue', 'Road', 'Grove', 'Court'];
-                  commonStreets.forEach(type => {
-                    melbourneSuburbs.slice(0, 3).forEach(suburb => {
-                      suggestions.push(`${newAddress.trim()} ${type}, ${suburb}`);
-                    });
-                  });
+                  setCurrentSuburb('');
                 }
-                
-                setAddressSuggestions(suggestions.slice(0, 8)); // Show max 8 suggestions
-                setCurrentSuburb('');
               } else {
-                setAddressSuggestions([]);
                 setCurrentSuburb('');
               }
             }}
@@ -288,54 +199,6 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             </div>
           )}
           
-          {/* Address suggestions dropdown */}
-          {addressSuggestions.length > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'white',
-              border: '1px solid var(--color-border)',
-              borderRadius: '4px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              zIndex: 1000,
-              maxHeight: '200px',
-              overflowY: 'auto'
-            }}>
-              {addressSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    setFormData({ ...formData, address: suggestion });
-                    setAddressSuggestions([]);
-                    // Extract and save suburb for future use
-                    const parts = suggestion.split(',');
-                    if (parts.length >= 2) {
-                      const suburb = parts.slice(1).join(',').trim();
-                      storage.saveLastSuburb(suburb);
-                      setLastSuburb(suburb);
-                    }
-                  }}
-                  style={{
-                    padding: '12px',
-                    borderBottom: index < addressSuggestions.length - 1 ? '1px solid var(--color-border)' : 'none',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    backgroundColor: 'white'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-background)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white';
-                  }}
-                >
-                  📍 {suggestion}
-                </div>
-              ))}
-            </div>
-          )}
           
           {/* Live auto-population - show as soon as user types */}
           {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') && (
