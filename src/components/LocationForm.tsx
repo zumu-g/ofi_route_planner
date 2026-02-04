@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Timer, Plus, X, CalendarClock } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { MapPin, Clock, Timer, Plus, X, CalendarClock, Loader2 } from 'lucide-react';
 import type { Location } from '../types';
 import { geocodeAddress } from '../utils/geocoding';
-import { motion } from 'framer-motion';
+import { searchAddresses, debounce, type AutocompleteResult } from '../utils/autocomplete';
+import { motion, AnimatePresence } from 'framer-motion';
 import { storage } from '../utils/storage';
 
 interface LocationFormProps {
@@ -26,6 +27,14 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [lastSuburb, setLastSuburb] = useState<string>('');
   const [currentSuburb, setCurrentSuburb] = useState<string>('');
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState<AutocompleteResult[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!editLocation) {
@@ -35,6 +44,115 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
       }
     }
   }, [editLocation]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 3) {
+        setSuggestions([]);
+        setIsLoadingSuggestions(false);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      try {
+        const results = await searchAddresses(query, true); // Filter to Victoria
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300),
+    []
+  );
+
+  const handleAddressChange = (value: string) => {
+    setFormData({ ...formData, address: value, coordinates: undefined });
+    setCurrentSuburb('');
+    
+    // Trigger autocomplete search
+    if (value.length >= 3) {
+      setIsLoadingSuggestions(true);
+      debouncedSearch(value);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+    
+    // Also handle the previous suburb suggestion logic
+    if (lastSuburb && value.trim().length >= 2 && !value.includes(',')) {
+      const words = value.trim().split(' ');
+      const hasNumber = /^\d+/.test(words[0] || '');
+      const hasStreetName = words.length >= 2;
+      
+      if (hasNumber && hasStreetName) {
+        setCurrentSuburb(lastSuburb);
+      }
+    }
+  };
+
+  const handleSuggestionSelect = (suggestion: AutocompleteResult) => {
+    setFormData({
+      ...formData,
+      address: suggestion.shortName,
+      coordinates: {
+        lat: suggestion.lat,
+        lng: suggestion.lng,
+      },
+    });
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setCurrentSuburb('');
+    setSelectedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
+        break;
+      case 'Enter':
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          e.preventDefault();
+          handleSuggestionSelect(suggestions[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,37 +255,121 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
+            {isLoadingSuggestions && (
+              <Loader2 
+                size={14} 
+                style={{ 
+                  display: 'inline', 
+                  marginLeft: '8px',
+                  animation: 'spin 1s linear infinite'
+                }} 
+              />
+            )}
           </label>
           
           <input
+            ref={inputRef}
             type="text"
-            placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "123 Main St, City"}
+            placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "Start typing an address..."}
             value={formData.address || ''}
-            onChange={(e) => {
-              const newAddress = e.target.value;
-              setFormData({ ...formData, address: newAddress });
-              
-              // Only suggest if we have a saved suburb and user has typed something
-              if (lastSuburb && newAddress.trim().length >= 2 && !newAddress.includes(',')) {
-                // Check if user has typed enough for a street address
-                const words = newAddress.trim().split(' ');
-                const hasNumber = /^\d+/.test(words[0] || '');
-                const hasStreetName = words.length >= 2;
-                
-                if (hasNumber && hasStreetName) {
-                  setCurrentSuburb(lastSuburb);
-                } else {
-                  setCurrentSuburb('');
-                }
-              } else {
-                setCurrentSuburb('');
+            onChange={(e) => handleAddressChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (suggestions.length > 0) {
+                setShowSuggestions(true);
               }
             }}
+            autoComplete="off"
             required
           />
           
+          {/* Autocomplete suggestions dropdown */}
+          <AnimatePresence>
+            {showSuggestions && suggestions.length > 0 && (
+              <motion.div
+                ref={suggestionsRef}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  backgroundColor: 'var(--color-surface)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)',
+                  border: '1px solid var(--color-border)',
+                  zIndex: 1000,
+                  overflow: 'hidden',
+                  maxHeight: '240px',
+                  overflowY: 'auto',
+                }}
+              >
+                {suggestions.map((suggestion, index) => (
+                  <div
+                    key={suggestion.placeId}
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      backgroundColor: selectedIndex === index 
+                        ? 'rgba(0, 122, 255, 0.1)' 
+                        : 'transparent',
+                      borderBottom: index < suggestions.length - 1 
+                        ? '1px solid var(--color-border)' 
+                        : 'none',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                    }}>
+                      <MapPin 
+                        size={16} 
+                        style={{ 
+                          color: 'var(--color-royal-blue)',
+                          marginTop: '2px',
+                          flexShrink: 0,
+                        }} 
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '15px',
+                          fontWeight: 500,
+                          color: 'var(--color-text-primary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {suggestion.shortName}
+                        </div>
+                        {suggestion.suburb && (
+                          <div style={{
+                            fontSize: '13px',
+                            color: 'var(--color-text-tertiary)',
+                            marginTop: '2px',
+                          }}>
+                            {[suggestion.suburb, suggestion.state, suggestion.postcode]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           {/* Live auto-population based on previously saved suburb */}
-          {lastSuburb && !formData.address && (
+          {lastSuburb && !formData.address && !showSuggestions && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px'
@@ -177,11 +379,9 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                 onClick={() => {
                   setFormData({ ...formData, address: `, ${lastSuburb}` });
                   setTimeout(() => {
-                    const inputs = document.querySelectorAll('input[type="text"]') as NodeListOf<HTMLInputElement>;
-                    const addressInput = inputs[1];
-                    if (addressInput) {
-                      addressInput.focus();
-                      addressInput.setSelectionRange(0, 0);
+                    if (inputRef.current) {
+                      inputRef.current.focus();
+                      inputRef.current.setSelectionRange(0, 0);
                     }
                   }, 0);
                 }}
@@ -202,7 +402,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           
           
           {/* Live auto-population - show as soon as user types */}
-          {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') && (
+          {currentSuburb && formData.address && formData.address.trim().length >= 2 && !formData.address.includes(',') && !showSuggestions && (
             <div style={{
               fontSize: '13px',
               marginTop: '6px',
