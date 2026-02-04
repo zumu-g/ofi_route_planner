@@ -12,6 +12,12 @@ interface LocationFormProps {
   editLocation?: Location;
 }
 
+// Detect if we're on a mobile device
+const isMobile = () => {
+  if (typeof window === 'undefined') return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+};
+
 export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, editLocation }) => {
   const [formData, setFormData] = useState<Partial<Location>>({
     address: '',
@@ -33,8 +39,41 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState<'below' | 'above'>('below');
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const addressContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Calculate dropdown position based on available space
+  const updateDropdownPosition = useCallback(() => {
+    if (!inputRef.current) return;
+    const inputRect = inputRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - inputRect.bottom;
+    const spaceAbove = inputRect.top;
+    
+    // On mobile with keyboard, prefer above if we're in bottom half
+    if (isMobile() && spaceBelow < 200 && spaceAbove > spaceBelow) {
+      setDropdownPosition('above');
+    } else {
+      setDropdownPosition('below');
+    }
+  }, []);
+  
+  // Scroll input into view when focused (iOS keyboard handling)
+  const scrollInputIntoView = useCallback((element: HTMLElement) => {
+    if (!isMobile()) return;
+    
+    // Small delay to let keyboard animate
+    setTimeout(() => {
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center',
+        inline: 'nearest'
+      });
+    }, 300);
+  }, []);
 
   useEffect(() => {
     if (!editLocation) {
@@ -213,13 +252,20 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
     }
   };
 
+  // Generic focus handler for all inputs
+  const handleInputFocus = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    scrollInputIntoView(e.target);
+  }, [scrollInputIntoView]);
+
   return (
     <motion.form
+      ref={formRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="card"
+      className="card location-form-container"
       onSubmit={handleSubmit}
+      style={{ position: 'relative' }}
     >
       <div style={{ marginBottom: 'var(--spacing-md)' }}>
         <h3>{editLocation ? 'Edit Location' : 'Add New Location'}</h3>
@@ -233,6 +279,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           <select
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as 'openHome' | 'appointment' })}
+            onFocus={handleInputFocus}
           >
             <option value="openHome">Open Home</option>
             <option value="appointment">Appointment</option>
@@ -245,13 +292,17 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           </label>
           <input
             type="text"
+            inputMode="text"
+            enterKeyHint="next"
+            autoCapitalize="words"
             placeholder="e.g., Smith Residence"
             value={formData.name || ''}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onFocus={handleInputFocus}
           />
         </div>
         
-        <div style={{ position: 'relative' }}>
+        <div ref={addressContainerRef} style={{ position: 'relative' }}>
           <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
             Address
@@ -270,16 +321,23 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
           <input
             ref={inputRef}
             type="text"
+            inputMode="text"
+            enterKeyHint="done"
             placeholder={lastSuburb ? `e.g., 123 Main St, ${lastSuburb}` : "Start typing an address..."}
             value={formData.address || ''}
             onChange={(e) => handleAddressChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => {
+            onFocus={(e) => {
               if (suggestions.length > 0) {
                 setShowSuggestions(true);
               }
+              updateDropdownPosition();
+              scrollInputIntoView(e.target);
             }}
             autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="words"
+            spellCheck="false"
             required
           />
           
@@ -288,33 +346,43 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             {showSuggestions && suggestions.length > 0 && (
               <motion.div
                 ref={suggestionsRef}
-                initial={{ opacity: 0, y: -10 }}
+                className="autocomplete-dropdown"
+                initial={{ opacity: 0, y: dropdownPosition === 'below' ? -10 : 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, y: dropdownPosition === 'below' ? -10 : 10 }}
                 transition={{ duration: 0.15 }}
                 style={{
                   position: 'absolute',
-                  top: '100%',
+                  ...(dropdownPosition === 'below' ? {
+                    top: '100%',
+                    marginTop: '4px',
+                  } : {
+                    bottom: '100%',
+                    marginBottom: '4px',
+                  }),
                   left: 0,
                   right: 0,
-                  marginTop: '4px',
                   backgroundColor: 'var(--color-surface)',
                   borderRadius: 'var(--radius-md)',
                   boxShadow: 'var(--shadow-lg)',
                   border: '1px solid var(--color-border)',
-                  zIndex: 1000,
+                  zIndex: 9999,
                   overflow: 'hidden',
-                  maxHeight: '240px',
+                  maxHeight: isMobile() ? '35vh' : '240px',
                   overflowY: 'auto',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
                 {suggestions.map((suggestion, index) => (
                   <div
                     key={suggestion.placeId}
+                    className="autocomplete-suggestion"
                     onClick={() => handleSuggestionSelect(suggestion)}
                     onMouseEnter={() => setSelectedIndex(index)}
+                    onTouchStart={() => setSelectedIndex(index)}
                     style={{
-                      padding: '12px 16px',
+                      padding: isMobile() ? '14px 16px' : '12px 16px',
+                      minHeight: isMobile() ? '52px' : 'auto',
                       cursor: 'pointer',
                       backgroundColor: selectedIndex === index 
                         ? 'rgba(0, 122, 255, 0.1)' 
@@ -323,6 +391,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
                         ? '1px solid var(--color-border)' 
                         : 'none',
                       transition: 'background-color 0.15s ease',
+                      WebkitTapHighlightColor: 'rgba(0, 122, 255, 0.1)',
                     }}
                   >
                     <div style={{
@@ -537,10 +606,12 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             placeholder="Any additional information..."
             value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onFocus={handleInputFocus}
+            enterKeyHint="done"
           />
         </div>
         
-        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', justifyContent: 'flex-end' }}>
+        <div className="form-actions" style={{ display: 'flex', gap: 'var(--spacing-sm)', justifyContent: 'flex-end' }}>
           <button type="button" className="btn-secondary" onClick={onCancel}>
             <X size={18} />
             Cancel

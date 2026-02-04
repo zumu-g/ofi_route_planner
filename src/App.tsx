@@ -303,21 +303,22 @@ function App() {
         }}>
           <div>
             <h1 style={{ margin: 0 }}>OFI Route Planner</h1>
-            <p className="text-secondary" style={{ margin: '4px 0 0' }}>
+            <p className="text-secondary header-subtitle" style={{ margin: '4px 0 0' }}>
               Plan your open home visits efficiently
             </p>
           </div>
           
-          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
+          <div className="header-buttons" style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               className="btn-ghost"
               onClick={() => setView('list')}
               style={{ 
                 backgroundColor: view === 'list' ? 'var(--color-background)' : 'transparent' 
               }}
+              title="List View"
             >
               <List size={20} />
-              List
+              <span className="header-btn-text">List</span>
             </button>
             <button
               className="btn-ghost"
@@ -325,9 +326,10 @@ function App() {
               style={{ 
                 backgroundColor: view === 'map' ? 'var(--color-background)' : 'transparent' 
               }}
+              title="Map View"
             >
               <Map size={20} />
-              Map
+              <span className="header-btn-text">Map</span>
             </button>
             <button
               className="btn-ghost"
@@ -335,12 +337,13 @@ function App() {
               style={{ 
                 backgroundColor: view === 'timeline' ? 'var(--color-background)' : 'transparent' 
               }}
+              title="Timeline View"
             >
               <Calendar size={20} />
-              Timeline
+              <span className="header-btn-text">Timeline</span>
             </button>
             
-            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 var(--spacing-sm)' }} className="no-print" />
+            <div className="header-divider no-print" style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 var(--spacing-sm)' }} />
             
             <button
               className="btn-ghost no-print"
@@ -353,7 +356,7 @@ function App() {
               title="Reschedule Route"
             >
               <Clock size={20} />
-              Reschedule
+              <span className="header-btn-text">Reschedule</span>
             </button>
             <button
               className="btn-ghost no-print"
@@ -362,10 +365,10 @@ function App() {
               title="Print Route"
             >
               <Printer size={20} />
-              Print
+              <span className="header-btn-text">Print</span>
             </button>
             
-            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 var(--spacing-sm)' }} className="no-print" />
+            <div className="header-divider no-print" style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)', margin: '0 var(--spacing-sm)' }} />
             
             <button
               className="btn-ghost no-print"
@@ -399,9 +402,9 @@ function App() {
       }}>
         {/* Route settings */}
         <div className="card fade-in" style={{ marginBottom: 'var(--spacing-lg)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 'var(--spacing-lg)', alignItems: 'center' }}>
-              <div>
+          <div className="route-settings" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--spacing-md)', alignItems: 'flex-start', flexWrap: 'wrap', flex: '1 1 auto', minWidth: '0' }}>
+              <div style={{ flex: '1 1 auto', minWidth: '140px', maxWidth: '200px' }}>
                 <label style={{ 
                   display: 'block', 
                   marginBottom: 'var(--spacing-xs)', 
@@ -414,11 +417,11 @@ function App() {
                   type="date"
                   value={routeDate}
                   onChange={(e) => setRouteDate(e.target.value)}
-                  style={{ width: '200px' }}
+                  style={{ width: '100%' }}
                 />
               </div>
               
-              <div>
+              <div style={{ flex: '1 1 auto', minWidth: '120px', maxWidth: '150px' }}>
                 <label style={{ 
                   display: 'block', 
                   marginBottom: 'var(--spacing-xs)', 
@@ -431,16 +434,16 @@ function App() {
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  style={{ width: '150px' }}
+                  style={{ width: '100%' }}
                 />
               </div>
               
               {locations.length > 0 && (
-                <div style={{ paddingTop: '20px' }}>
+                <div style={{ paddingTop: '20px', flex: '1 1 auto', minWidth: '150px' }}>
                   <div className="text-secondary" style={{ fontSize: '14px' }}>
                     Total: {Math.round(totalDurationWithReturn)} min • {totalDistanceWithReturn.toFixed(1)} km
                     {returnTravelInfo && (
-                      <span style={{ marginLeft: '8px', color: 'var(--color-royal-blue)' }}>
+                      <span style={{ marginLeft: '8px', color: 'var(--color-royal-blue)', display: 'block' }}>
                         (includes return)
                       </span>
                     )}
@@ -449,14 +452,15 @@ function App() {
               )}
             </div>
             
-            <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
+            <div className="route-actions" style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <button
                 className="btn-secondary"
                 onClick={handleOptimizeRoute}
                 disabled={locations.length < 2 || isOptimizing}
+                title="Optimize Route"
               >
-                <Navigation size={18} />
-                {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
+                <Navigation size={18} className="btn-icon" />
+                <span>{isOptimizing ? 'Optimizing...' : 'Optimize Route'}</span>
               </button>
               
               <button
@@ -464,17 +468,18 @@ function App() {
                 onClick={() => setShowReturnForm(true)}
                 title={returnDestination ? 'Change return destination' : 'Set return destination'}
               >
-                <Home size={18} />
-                {returnDestination ? 'Return Set' : 'Set Return'}
+                <Home size={18} className="btn-icon" />
+                <span>{returnDestination ? 'Return Set' : 'Set Return'}</span>
               </button>
               
               <button
                 className="btn-secondary"
                 onClick={() => setShowExportModal(true)}
                 disabled={locations.length === 0}
+                title="Export"
               >
-                <Download size={18} />
-                Export
+                <Download size={18} className="btn-icon" />
+                <span>Export</span>
               </button>
               
               <button
@@ -483,9 +488,10 @@ function App() {
                   setEditingLocation(null);
                   setShowAddForm(true);
                 }}
+                title="Add Location"
               >
-                <Plus size={18} />
-                Add Location
+                <Plus size={18} className="btn-icon" />
+                <span>Add Location</span>
               </button>
             </div>
           </div>
