@@ -4,6 +4,7 @@ const STORAGE_KEY = 'ofi-route-planner-locations';
 const SETTINGS_KEY = 'ofi-route-planner-settings';
 const LAST_SUBURB_KEY = 'ofi-route-planner-last-suburb';
 const SAVED_ROUTES_KEY = 'ofi-route-planner-saved-routes';
+const RETURN_DESTINATION_KEY = 'ofi-route-planner-return-destination';
 
 interface StorageData {
   locations: Location[];
@@ -132,6 +133,37 @@ export const storage = {
       localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(updatedRoutes));
     } catch (error) {
       console.error('Failed to delete saved route:', error);
+    }
+  },
+
+  saveReturnDestination: (destination: Location | null): void => {
+    try {
+      if (destination) {
+        localStorage.setItem(RETURN_DESTINATION_KEY, JSON.stringify(destination));
+      } else {
+        localStorage.removeItem(RETURN_DESTINATION_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to save return destination:', error);
+    }
+  },
+
+  loadReturnDestination: (): Location | null => {
+    try {
+      const data = localStorage.getItem(RETURN_DESTINATION_KEY);
+      if (!data) return null;
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Failed to load return destination:', error);
+      return null;
+    }
+  },
+
+  clearReturnDestination: (): void => {
+    try {
+      localStorage.removeItem(RETURN_DESTINATION_KEY);
+    } catch (error) {
+      console.error('Failed to clear return destination:', error);
     }
   }
 };

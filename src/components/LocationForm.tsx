@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Timer, Plus, X } from 'lucide-react';
-import { Location } from '../types';
+import { MapPin, Clock, Timer, Plus, X, CalendarClock } from 'lucide-react';
+import type { Location } from '../types';
 import { geocodeAddress } from '../utils/geocoding';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { storage } from '../utils/storage';
 
 interface LocationFormProps {
@@ -74,6 +74,7 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
       coordinates,
       startTime: formData.startTime,
       endTime: formData.endTime,
+      fixedTime: formData.type === 'openHome' ? formData.fixedTime : undefined,
     };
     
     // Extract and save the suburb/city for future prepopulation
@@ -282,6 +283,24 @@ export const LocationForm: React.FC<LocationFormProps> = ({ onAdd, onCancel, edi
             />
           </div>
         </div>
+        
+        {formData.type === 'openHome' && (
+          <div>
+            <label style={{ display: 'block', marginBottom: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+              <CalendarClock size={14} style={{ display: 'inline', marginRight: '4px' }} />
+              Fixed Time (Optional)
+            </label>
+            <input
+              type="time"
+              value={formData.fixedTime || ''}
+              onChange={(e) => setFormData({ ...formData, fixedTime: e.target.value })}
+              placeholder="Leave empty for flexible scheduling"
+            />
+            <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
+              Set if this OFI has a specific scheduled time (e.g., 11:00 AM open home)
+            </p>
+          </div>
+        )}
         
         {formData.type === 'appointment' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>

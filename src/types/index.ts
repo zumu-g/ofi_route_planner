@@ -12,6 +12,7 @@ export interface Location {
   type: 'openHome' | 'appointment';
   startTime?: string; // ISO string
   endTime?: string; // ISO string
+  fixedTime?: string; // HH:mm format - for OFIs with fixed scheduled times
 }
 
 export interface Route {

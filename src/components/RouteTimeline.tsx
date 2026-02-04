@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, MapPin, Car } from 'lucide-react';
-import { RouteSegment } from '../types';
+import type { RouteSegment } from '../types';
 import { motion } from 'framer-motion';
 
 interface RouteTimelineProps {

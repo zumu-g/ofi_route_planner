@@ -1,4 +1,4 @@
-import { Location, CalendarEvent, ExportOptions } from '../types';
+import type { Location, CalendarEvent, ExportOptions } from '../types';
 import { format, parse } from 'date-fns';
 
 export function createCalendarEvent(location: Location, date: string, startTime: string): CalendarEvent {
@@ -118,4 +118,31 @@ function downloadFile(filename: string, content: string, mimeType: string): void
   link.click();
   
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Create a calendar event for the return trip
+ */
+export function createReturnEvent(
+  returnDestination: Location,
+  date: string,
+  departureTime: string,
+  travelDurationMinutes: number
+): CalendarEvent {
+  const baseDate = parse(date, 'yyyy-MM-dd', new Date());
+  const [hours, minutes] = departureTime.split(':').map(Number);
+  
+  const startDate = new Date(baseDate);
+  startDate.setHours(hours, minutes, 0, 0);
+  
+  const endDate = new Date(startDate);
+  endDate.setMinutes(endDate.getMinutes() + travelDurationMinutes);
+  
+  return {
+    title: `Return to ${returnDestination.name || 'Office/Home'}`,
+    location: returnDestination.address,
+    startDate,
+    endDate,
+    notes: `Travel time: ${Math.round(travelDurationMinutes)} minutes`,
+  };
 }

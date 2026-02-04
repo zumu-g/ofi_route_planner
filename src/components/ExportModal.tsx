@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, Smartphone, X, Download } from 'lucide-react';
+import { Calendar, Smartphone, X, Download, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Location, ExportOptions } from '../types';
-import { createCalendarEvent, exportCalendarEvents } from '../utils/calendar';
+import type { Location, ExportOptions } from '../types';
+import { createCalendarEvent, createReturnEvent, exportCalendarEvents } from '../utils/calendar';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -11,6 +11,8 @@ interface ExportModalProps {
   date: string;
   startTime: string;
   segments: any[];
+  returnDestination?: Location | null;
+  returnTravelInfo?: { distance: number; duration: number } | null;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -20,12 +22,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   date,
   startTime,
   segments,
+  returnDestination,
+  returnTravelInfo,
 }) => {
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'ics',
     includeBuffers: true,
     includeNotes: true,
   });
+
+  const [includeReturn, setIncludeReturn] = useState(true);
 
   const handleExport = () => {
     const events = locations.map((location, index) => {
@@ -37,6 +43,37 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       
       return createCalendarEvent(location, date, eventStartTime);
     });
+
+    // Add return trip event if available and enabled
+    if (includeReturn && returnDestination && returnTravelInfo && locations.length > 0) {
+      const lastLocation = locations[locations.length - 1];
+      const lastSegment = segments[segments.length - 1];
+      
+      // Calculate departure time from last location
+      let departureTime = startTime;
+      if (lastSegment) {
+        // Parse arrival time and add duration + buffer
+        const arrivalTime = lastSegment.arrivalTime;
+        const [hours, minutes] = arrivalTime.split(':').map(Number);
+        const departure = new Date();
+        departure.setHours(hours, minutes + lastLocation.duration + lastLocation.buffer, 0, 0);
+        departureTime = `${String(departure.getHours()).padStart(2, '0')}:${String(departure.getMinutes()).padStart(2, '0')}`;
+      } else if (locations.length === 1) {
+        // Single location - departure after duration + buffer
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const departure = new Date();
+        departure.setHours(hours, minutes + lastLocation.duration + lastLocation.buffer, 0, 0);
+        departureTime = `${String(departure.getHours()).padStart(2, '0')}:${String(departure.getMinutes()).padStart(2, '0')}`;
+      }
+      
+      const returnEvent = createReturnEvent(
+        returnDestination,
+        date,
+        departureTime,
+        returnTravelInfo.duration
+      );
+      events.push(returnEvent);
+    }
 
     exportCalendarEvents(events, exportOptions);
     onClose();
@@ -185,6 +222,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   Include notes in calendar events
                 </label>
               </div>
+              
+              {returnDestination && (
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeReturn}
+                      onChange={(e) => setIncludeReturn(e.target.checked)}
+                    />
+                    <Home size={16} style={{ color: 'var(--color-royal-blue)' }} />
+                    Include return trip to {returnDestination.name || 'office/home'}
+                    {returnTravelInfo && (
+                      <span className="text-secondary" style={{ fontSize: '13px' }}>
+                        (+{Math.round(returnTravelInfo.duration)} min)
+                      </span>
+                    )}
+                  </label>
+                </div>
+              )}
               
               <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-md)' }}>
                 <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>

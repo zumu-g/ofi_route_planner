@@ -271,3 +271,315 @@ input::placeholder, textarea::placeholder {
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-tertiary);
 }
+
+/* No-print utility class */
+.no-print {
+  /* Visible by default */
+}
+
+/* Print-friendly styles */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    background-color: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+  
+  /* Hide navigation, buttons, and non-essential elements */
+  .no-print,
+  .btn-ghost,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+  
+  /* Show edit/navigation buttons wrapper for LocationCard */
+  .card > div:last-child {
+    display: none !important;
+  }
+  
+  /* Reset card styles for print */
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid;
+    margin-bottom: 12pt;
+    padding: 12pt;
+  }
+  
+  /* Header styling for print */
+  header {
+    border-bottom: 2px solid black !important;
+    padding: 12pt 0 !important;
+    margin-bottom: 12pt;
+  }
+  
+  header h1 {
+    font-size: 18pt;
+  }
+  
+  header p {
+    display: none;
+  }
+  
+  /* Make main content full width */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  
+  /* Location card print styling */
+  .card h4 {
+    font-size: 12pt;
+    margin-bottom: 4pt;
+  }
+  
+  .card p {
+    font-size: 10pt;
+    margin: 2pt 0;
+  }
+  
+  /* Show fixed time badge */
+  span[style*="CalendarClock"] {
+    display: inline-flex !important;
+  }
+  
+  /* Print header with date info */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+  
+  /* Hide drag handles */
+  [class*="GripVertical"],
+  svg[class*="grip"] {
+    display: none !important;
+  }
+  
+  /* Print-specific layout */
+  #root {
+    display: block;
+  }
+  
+  /* Ensure location list items are visible */
+  [style*="display: flex"][style*="flex-direction: column"] > * {
+    page-break-inside: avoid;
+  }
+}
+
+/* ================================
+   Mobile UX Improvements (Sprint 2)
+   ================================ */
+
+/* Minimum touch target size (44px recommended by Apple HIG) */
+@media (max-width: 768px) {
+  /* Responsive typography */
+  h1 {
+    font-size: 28px;
+  }
+  
+  h2 {
+    font-size: 24px;
+  }
+  
+  h3 {
+    font-size: 20px;
+  }
+  
+  h4 {
+    font-size: 18px;
+  }
+  
+  p {
+    font-size: 16px;
+  }
+  
+  /* Ensure minimum touch target sizes */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+  
+  .btn-ghost {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 12px;
+  }
+  
+  /* Form inputs - larger touch targets */
+  input, textarea, select {
+    min-height: 48px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 14px 16px;
+  }
+  
+  /* Improved card padding for mobile */
+  .card {
+    padding: var(--spacing-md);
+  }
+  
+  /* Main content reduced padding */
+  main {
+    padding: var(--spacing-md) !important;
+  }
+  
+  /* Header mobile adjustments */
+  header {
+    padding: var(--spacing-md);
+  }
+  
+  /* Stack header content vertically on mobile */
+  header > div {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  header > div > div:first-child {
+    text-align: center;
+  }
+  
+  header > div > div:last-child {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  /* Hide button text on very small screens */
+  @media (max-width: 480px) {
+    header .btn-ghost span:not(:empty) {
+      display: none;
+    }
+  }
+}
+
+/* Drag handle improvements for touch */
+.drag-handle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Enhanced drag handle visibility on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .drag-handle,
+  [style*="cursor: grab"] {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    margin: -8px;
+    margin-right: 0;
+  }
+  
+  .drag-handle:active,
+  [style*="cursor: grab"]:active {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Bottom sheet style for modals on mobile */
+@media (max-width: 768px) {
+  /* Modal adjustments for bottom sheet appearance */
+  .modal-content,
+  [style*="position: fixed"][style*="transform: translate"] {
+    bottom: 0;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0 !important;
+  }
+  
+  /* Bottom sheet handle indicator */
+  .modal-content::before,
+  [style*="position: fixed"][style*="transform: translate"]::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 5px;
+    background-color: var(--color-border);
+    border-radius: 3px;
+    margin: 8px auto 16px;
+  }
+  
+  /* LocationForm adjustments for mobile */
+  form .card,
+  [class*="LocationForm"] {
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  main {
+    padding-bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  }
+  
+  .modal-content,
+  [style*="position: fixed"] {
+    padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
+  }
+}
+
+/* Improved scrolling for touch */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection during drag on touch */
+@media (hover: none) {
+  .card {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-royal-blue);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Haptic feedback visual hint for draggable items */
+@media (hover: none) and (pointer: coarse) {
+  .card[style*="cursor: grab"]:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-lg);
+  }
+}
