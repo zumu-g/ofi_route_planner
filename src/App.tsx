@@ -686,6 +686,8 @@ function App() {
         date={routeDate}
         startTime={startTime}
         segments={segments}
+        returnDestination={returnDestination}
+        returnTravelInfo={returnTravelInfo}
       />
 
       {/* Reschedule Modal */}
